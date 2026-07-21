@@ -31,7 +31,10 @@ const App = () => {
   const anyModalOpen = selectedArticle || selectedPaper || selectedInternship;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    // 被主站内嵌时不撑满视口（高度由主站按内容自适应）；独立访问时占满整屏
+    <div
+      className={`${embedded ? '' : 'min-h-screen '}flex flex-col bg-gray-50`}
+    >
       {!embedded && (
         <header className="bg-white shadow-sm border-b sticky top-0 z-40">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
