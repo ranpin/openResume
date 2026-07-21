@@ -1,0 +1,54 @@
+/* 打印 / 导出 PDF：只输出简历文档本身（#resume-print），隐藏站点其余 UI。
+   由「导出 PDF」按钮触发 window.print()，用户在打印对话框选「另存为 PDF」。 */
+
+/* 强制打印背景色（双栏模板的彩色侧栏在打印/导出 PDF 时保留配色）*/
+.resume-color-exact {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* 屏幕预览下让简历看起来像一页 A4（820px 宽 → 约 1159px 高）*/
+@media screen {
+  .resume-page {
+    min-height: 1159px;
+  }
+}
+
+@media print {
+  /* 隐藏所有内容，只保留简历文档子树 */
+  body * {
+    visibility: hidden;
+  }
+  #resume-print,
+  #resume-print * {
+    visibility: visible;
+  }
+
+  #resume-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* A4 页面，留出对称页边距 */
+  @page {
+    size: A4;
+    margin: 12mm 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* 避免条目被跨页截断 */
+  .resume-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

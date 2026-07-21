@@ -1,0 +1,35 @@
+company: Banma Network
+position: 大模型工程框架工程师
+period: 2025.07 - 至今
+location: 杭州
+type: 全职
+department: Banma Zhixing - Edge AI Technology Dept. - LLM Engineering Framework
+description: >-
+  负责端侧大模型SDK开发、AI Agent系统架构设计、多模态记忆方案落地等工作,主导Lantu、BYD等多个车企项目的技术对接与交付。
+responsibilities: >-
+  主导端侧大模型SDK的架构设计与开发,负责性能优化和实车部署联调。开发AADK框架支持多种Agent场景,推动多模态记忆方案的技术预研。与算法、量化、测试、车企等多团队紧密协作,确保项目顺利交付。
+achievements:
+  - 成功交付Lantu汽车大模型项目,支持遗留物检测、遗留儿童识别、衣着识别、舱外问答等多个场景
+  - 完成BYDAADK定制化开发,实现多LoRA动态切换机制
+  - 建立AADK框架,支持多种Agent场景快速开发,编写开发指南和API文档
+  - 通过模型替换、图像预处理优化等手段,累计提升推理速度数百毫秒
+  - 解决TPS持续下降的性能问题,保障系统稳定性
+  - 沉淀Lantu联调经验,形成标准化测试流程
+skills:
+  - C++
+  - Python
+  - vLLM
+  - QNN
+  - GenAI SDK
+  - LoRA
+  - AADK
+  - 多模态
+skillsGained:
+  - name: 端侧大模型工程化
+    description: 掌握从SDK设计、性能优化到实车部署的全流程能力
+  - name: Agent框架开发
+    description: 具备模块化系统设计和消息路由机制的开发经验
+  - name: 跨团队协作
+    description: 能够有效推动算法、量化、测试、车企等多团队协作
+summary: >-
+  在Banma Network的工作让我深入理解了端侧大模型工程化的完整链路,从底层推理优化到上层Agent架构设计,积累了丰富的实战经验。通过与多个车企的合作,我学会了如何在复杂的业务场景中平衡性能、成本和用户体验。

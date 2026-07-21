@@ -1,0 +1,60 @@
+title: 端侧智能AADK框架开发
+period: 2025.12 - 2026
+status: 持续迭代
+tags: [C++, 设计模式, 异步编程, Agent框架]
+github: ''
+demo: ''
+description: >-
+  开发端侧AI Agent开发框架(AADK),支持多种Agent场景的快速开发和部署
+businessContext: >-
+  随着车机智能化程度提升,需要支持视频聊天、主动语音、车辆控制等多种Agent场景。传统开发方式重复造轮子,效率低下。AADK框架旨在提供标准化的Agent开发基础设施,降低开发门槛,提升代码复用率。
+yourRole: >-
+  作为框架核心开发者,负责整体架构设计、消息分发机制实现、Agent插件化接口定义。编写开发文档和示例代码,推动框架在团队内的落地应用。
+architectureDetail: |
+  采用工厂模式和策略模式设计:
+
+  - **MsgDispatcher**：消息分发中心，根据 scenario_id 路由到对应 Agent
+  - **AgentPlugin**：统一接口基类，定义 deliver_msg、scenario_id、clear_memory 等标准方法
+  - **ModelRunner**：模型运行器，封装推理调用逻辑
+  - **具体 Agent**：VideoChat / ProactiveSpeech / ActiveVision / CarControl / Chitchat 等继承自 AgentPlugin
+abstract: >-
+  AADK(Autonomous Agent Development Kit)是一个面向端侧设备的AI Agent开发框架,采用模块化架构设计,支持视频聊天、主动语音、主动视觉、车辆控制、闲聊等多种Agent场景。框架提供统一的消息分发、模型推理和插件化接口,大幅降低Agent开发门槛。
+methodology: >-
+  采用工厂模式和策略模式设计,核心模块包括消息分发中心(MsgDispatcher)、多个专用Agent模块、统一接口(AgentPlugin)和模型运行器(ModelRunner)。所有Agent继承自AgentPlugin基类,实现deliver_msg、scenario_id、clear_memory等标准接口。
+technicalChallenges:
+  - challenge: 消息路由的效率与扩展性
+    solution: 设计基于scenario_id的路由表,支持O(1)时间复杂度的消息分发,新增Agent只需注册即可
+    impact: 支持5+种Agent类型,新增Agent开发时间从2周缩短至3天
+  - challenge: Agent间的状态隔离
+    solution: 为每个Agent实例维护独立的上下文,通过clear_memory接口实现会话重置
+    impact: 避免不同场景间的状态污染,提升系统稳定性
+  - challenge: 云端模型与端侧模型的统一调用
+    solution: 设计ModelRunner抽象层,屏蔽Banma Cloud Platform和端侧推理引擎的差异
+    impact: 实现云端/端侧模型无缝切换,支持混合部署
+results:
+  - metric: 支持的Agent类型
+    value: 5+
+    baseline: VideoChat/ProactiveSpeech/ActiveVision/CarControl/Chitchat
+  - metric: 开发效率
+    value: 显著提升
+    baseline: 标准化开发流程
+  - metric: 代码复用率
+    value: 高
+    baseline: 模块化设计
+achievements:
+  - 设计并实现模块化Agent架构,符合单一职责原则
+  - 开发消息处理工作流: 消息接收 → 消息路由 → Agent内部处理 → 模型推理 → 结果处理
+  - 编写Agent开发指南,规范新Agent的开发流程
+  - 支持Banma Cloud Platform模型调用,实现云端模型接入
+  - 实现持久化存储检索支持,增强Agent的记忆能力
+  - 补充AADK API文档,完善开发者生态
+interviewHighlights:
+  - '架构设计能力: 运用设计模式构建可扩展的Agent框架'
+  - '标准化思维: 通过统一接口和开发指南,提升团队协作效率'
+  - '技术广度: 同时掌握端侧推理和云端API调用'
+  - '文档能力: 编写完善的API文档和开发指南'
+discussionTopics:
+  - Agent框架的设计原则与最佳实践
+  - 消息驱动架构的优缺点
+  - 如何在资源受限环境下实现多Agent并发
+  - 端云协同的Agent系统设计思路

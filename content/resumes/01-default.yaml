@@ -1,0 +1,76 @@
+label: 端侧大模型工程师
+target: 大模型 / AI Agent 工程方向
+updated: '2026-07'
+basics:
+  name: Ranpin
+  title: 端侧大模型工程 / AI Agent 工程师
+  email: ranpinc@gmail.com
+  location: 杭州，中国
+  github: https://github.com/ranpin
+  avatar: R
+  summary: >-
+    专注端侧大模型工程化与 AI Agent 系统开发的软件工程师，具备扎实的大模型推理优化、SDK
+    开发、多模态记忆系统等领域实践经验。擅长 C++/Python，熟悉 vLLM、QNN
+    等推理框架，主导多个车企端侧大模型项目的技术对接与交付。
+
+# 教育经历（占位，请按实际填写后再发布）
+education:
+  - school: 待填写（学校名称）
+    degree: 待填写（学历）
+    major: 待填写（专业）
+    period: 待填写（起止时间）
+
+work:
+  - company: Banma Network（斑马智行）
+    position: 大模型工程框架工程师
+    period: 2025.07 - 至今
+    location: 杭州
+    highlights:
+      - 主导端侧大模型 SDK 架构设计与开发，负责性能优化与实车部署联调
+      - 成功交付 Lantu 汽车大模型项目，覆盖遗留物检测、遗留儿童识别、衣着识别、舱外问答等场景
+      - 完成 BYD AADK 定制化开发，实现多 LoRA 动态切换机制
+      - 建立 AADK 框架，支持多种 Agent 场景快速开发，沉淀开发指南与 API 文档
+      - 通过模型替换、图像预处理优化等手段累计提升推理速度数百毫秒，解决 TPS 持续下降问题
+
+projects:
+  - name: Lantu 基座大模型 SDK 开发与联调
+    role: SDK 开发负责人
+    period: 2026.03 - 2026.04
+    tech: [C++, Python, vLLM, QNN, GenAI SDK]
+    highlights:
+      - 设计分层 SDK 架构（SDK 层 / 推理层 / 预处理层 / 后处理层），提供统一 C++ 接口与数据 dump 能力
+      - 排查显存泄漏、修复图像缓存未释放问题，将 TPS 从异常的 6 恢复到稳定 40
+      - 通过模型替换与预处理并行化，舱内端到端耗时优化至 ~4s，遗留物场景正确率从 5/12 提升到 12/18
+  - name: BYD AADK 定制化开发
+    role: 端侧框架开发
+    period: 2026
+    tech: [C++, LoRA, AADK]
+    highlights:
+      - 实现多 LoRA 动态切换机制，支持单基座模型下多任务快速切换
+      - 与算法、量化、测试、车企多团队协作完成定制化交付
+  - name: AADK Agent 开发框架
+    role: 框架设计与开发
+    period: 2025 - 2026
+    tech: [C++, Python, Agent]
+    highlights:
+      - 设计模块化系统与消息路由机制，支持多种 Agent 场景快速开发
+      - 编写开发指南与 API 文档，降低团队接入成本
+
+skills:
+  - category: 编程语言
+    items: [C++, Python]
+  - category: 推理 / 框架
+    items: [vLLM, QNN, GenAI SDK, AADK, LoRA]
+  - category: 领域
+    items: [端侧大模型, AI Agent, 性能优化, 多模态记忆]
+
+awards:
+  - title: Lantu 项目成功交付
+    issuer: Banma Network
+    date: '2026'
+  - title: BYD 项目技术突破
+    issuer: Banma Network
+    date: '2026'
+  - title: AADK 框架正式发布
+    issuer: Banma Network
+    date: '2026'

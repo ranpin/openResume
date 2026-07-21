@@ -1,0 +1,56 @@
+title: BYD项目 - AADK多LoRA支持
+period: 2026.04
+status: 已完成
+tags: [AADK, LoRA, C++, 动态切换]
+github: ''
+demo: ''
+description: >-
+  为BYD定制AADK框架,支持单个场景加载多个LoRA模型,根据不同agent_id使用不同的LoRA进行推理
+businessContext: >-
+  BYD需要在同一车机场景中支持多种不同的对话风格和功能(如导航助手、娱乐助手、车辆控制助手),传统方案需要为每个场景部署独立模型,资源占用大。通过多LoRA技术,可以在共享基座模型的前提下,实现不同场景的个性化能力。
+yourRole: >-
+  负责AADK框架的定制化改造,设计并实现多LoRA动态加载机制。与BYD技术团队对接需求,制定技术方案,完成代码开发和联调测试。
+architectureDetail: |
+  - **aadkcore 层**：扩展模型加载器，支持单个场景注册多个 LoRA 适配器
+  - **oai_inference agent 层**：解析请求中的 agent_id，映射到对应的 lora_name
+  - **路由层**：根据 lora_name 动态选择激活的 LoRA，实现毫秒级切换
+  - **分支管理**：创建独立的 byd 分支，隔离定制代码与主线
+abstract: >-
+  针对BYD的业务需求,对AADK框架进行定制化改造,实现多LoRA动态加载和切换机制。该方案显著提升了模型复用效率,支持灵活的场景扩展,为后续业务迭代奠定了坚实基础。
+methodology: >-
+  修改aadkcore代码支持单个场景加载多个LoRA,根据lora_name使用不同的LoRA。修改oai_inference agent代码,支持agent_id的解析与lora_name的映射。创建独立的byd分支,避免与主线代码冲突。
+technicalChallenges:
+  - challenge: LoRA切换时的状态管理
+    solution: 设计LoRA上下文隔离机制,确保切换时不会污染其他LoRA的状态
+    impact: 实现干净的切换,避免串扰
+  - challenge: agent_id到lora_name的映射灵活性
+    solution: 采用配置化映射表,支持运行时动态更新,无需重新编译
+    impact: 提升运维灵活性,支持A/B测试
+  - challenge: 分支管理与代码合并冲突
+    solution: 协商创建两个独立的byd分支(基础框架分支和业务逻辑分支),明确合并策略
+    impact: 避免与主线代码冲突,便于后续迭代
+results:
+  - metric: LoRA切换效率
+    value: 毫秒级
+    baseline: 传统方式需重新加载
+  - metric: 模型复用率
+    value: 显著提升
+    baseline: 单场景单模型
+  - metric: 场景扩展灵活性
+    value: 高
+    baseline: 基于agent_id映射
+achievements:
+  - 实现多LoRA动态切换机制,提升模型复用效率
+  - 设计agent_id到lora_name的映射方案,支持灵活的场景扩展
+  - 更新设备上部署的agentcore,链路联调成功
+  - 协商创建两个新的byd分支,便于后续代码迭代
+interviewHighlights:
+  - '技术创新: 将多LoRA技术应用于车机场景,探索端侧模型复用的新路径'
+  - '工程实践: 设计配置化映射方案,平衡灵活性与性能'
+  - '协作能力: 与BYD团队紧密合作,快速响应定制化需求'
+  - '版本管理: 建立分支隔离策略,保障代码可维护性'
+discussionTopics:
+  - LoRA技术的原理及适用场景
+  - 多租户场景下的模型共享策略
+  - 端侧资源约束下的模型优化思路
+  - 如何设计可扩展的Agent路由机制

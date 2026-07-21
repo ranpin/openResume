@@ -1,0 +1,156 @@
+/* 简历正文富文本（<RichText> 渲染 Markdown）的排版。
+   紧凑、适配 A4；无序列表用箭头样式，有序列表保留序列号。 */
+
+/* 分页：屏幕显示多页 sheet，打印显示连续文档 */
+@media screen {
+  .resume-print-only {
+    display: none;
+  }
+}
+@media print {
+  .resume-screen-only {
+    display: none;
+  }
+}
+
+/* 每个可分页内容块之间的间距（用 padding 让测量 offsetHeight 计入）*/
+.rt-pageblock {
+  padding-bottom: 16px;
+}
+
+.resume-rt {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #374151; /* gray-700 */
+}
+
+.resume-rt p {
+  margin: 0.15em 0;
+}
+
+.resume-rt strong {
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+}
+
+.resume-rt em {
+  font-style: italic;
+}
+
+.resume-rt a {
+  color: #2563eb; /* blue-600 */
+  text-decoration: none;
+}
+.resume-rt a:hover {
+  text-decoration: underline;
+}
+
+.resume-rt code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: #f3f4f6; /* gray-100 */
+  padding: 0 0.25em;
+  border-radius: 3px;
+}
+
+/* 无序列表：箭头样式 */
+.resume-rt ul {
+  list-style: none;
+  margin: 0.2em 0;
+  padding-left: 1.1em;
+}
+.resume-rt ul > li {
+  position: relative;
+  margin: 0.1em 0;
+}
+.resume-rt ul > li::before {
+  content: '▸';
+  position: absolute;
+  left: -1.1em;
+  color: #9ca3af; /* gray-400 */
+}
+
+/* 有序列表：序列号 */
+.resume-rt ol {
+  margin: 0.2em 0;
+  padding-left: 1.4em;
+  list-style: decimal;
+}
+.resume-rt ol > li {
+  margin: 0.1em 0;
+}
+
+.resume-rt blockquote {
+  margin: 0.3em 0;
+  padding-left: 0.8em;
+  border-left: 3px solid #e5e7eb; /* gray-200 */
+  color: #6b7280; /* gray-500 */
+}
+
+.resume-rt hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 0.6em 0;
+}
+
+/* 字号（工具栏「字号」插入的受限 span）*/
+.resume-rt .rt-sm {
+  font-size: 0.85em;
+}
+.resume-rt .rt-lg {
+  font-size: 1.18em;
+}
+.resume-rt .rt-xl {
+  font-size: 1.45em;
+  font-weight: 600;
+}
+
+/* 对齐（display:block 让 span 能整行对齐）*/
+.resume-rt .rt-left {
+  display: block;
+  text-align: left;
+}
+.resume-rt .rt-center {
+  display: block;
+  text-align: center;
+}
+.resume-rt .rt-right {
+  display: block;
+  text-align: right;
+}
+
+/* 字体颜色 */
+.resume-rt {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.resume-rt .rt-c-red {
+  color: #dc2626;
+}
+.resume-rt .rt-c-orange {
+  color: #ea580c;
+}
+.resume-rt .rt-c-amber {
+  color: #d97706;
+}
+.resume-rt .rt-c-green {
+  color: #16a34a;
+}
+.resume-rt .rt-c-teal {
+  color: #0d9488;
+}
+.resume-rt .rt-c-blue {
+  color: #2563eb;
+}
+.resume-rt .rt-c-violet {
+  color: #7c3aed;
+}
+.resume-rt .rt-c-pink {
+  color: #db2777;
+}
+.resume-rt .rt-c-gray {
+  color: #6b7280;
+}
+.resume-rt .rt-c-black {
+  color: #111827;
+}
