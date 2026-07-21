@@ -1,4 +1,4 @@
-# 简历中心 · ranpin/resume
+# 简历中心 · resume
 
 [![Live](https://img.shields.io/badge/Live-ranpin.github.io%2Fresume-2563eb?logo=githubpages&logoColor=white)](https://ranpin.github.io/resume/)
 [![Deploy](https://github.com/ranpin/resume/actions/workflows/deploy.yml/badge.svg)](https://github.com/ranpin/resume/actions/workflows/deploy.yml)
