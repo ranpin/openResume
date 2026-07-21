@@ -1,5 +1,12 @@
 # 简历中心 · ranpin/resume
 
+[![Live](https://img.shields.io/badge/Live-ranpin.github.io%2Fresume-2563eb?logo=githubpages&logoColor=white)](https://ranpin.github.io/resume/)
+[![Deploy](https://github.com/ranpin/resume/actions/workflows/deploy.yml/badge.svg)](https://github.com/ranpin/resume/actions/workflows/deploy.yml)
+[![CI](https://github.com/ranpin/resume/actions/workflows/ci.yml/badge.svg)](https://github.com/ranpin/resume/actions/workflows/ci.yml)
+![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
+
 Ranpin 的在线简历中心，独立部署在 **https://ranpin.github.io/resume/**，由主站（[ranpin.github.io](https://ranpin.github.io/)）以入口卡片引用。
 
 一个自洽的 Vite + React + TypeScript 单页应用，包含三大功能：
