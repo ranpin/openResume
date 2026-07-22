@@ -5,21 +5,36 @@ import RichTextField from './RichTextField';
 import {
   cloneResume,
   downloadResumeYaml,
+  fileToResizedDataUrl,
   isSameResume,
   normalizeResume,
 } from './resumeIo';
 import { THEME_OPTIONS, TEMPLATE_OPTIONS } from './resumeTheme';
+import {
+  resolveSections,
+  sectionConfigFromData,
+  type ResolvedSection,
+} from './resumeSections';
 import { useResumeStore } from '../../store/useResumeStore';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
 import type {
   ResumeData,
+  ResumeProject,
   ResumeTemplate,
   ResumeTheme,
 } from '../../types/resume';
 
 // 可拖拽排序的数组字段
 type ArrayKey = 'education' | 'work' | 'projects' | 'skills' | 'awards';
+
+// 全局排版设置的默认值与范围（滑块）
+const SETTING_DEFAULTS = {
+  fontScale: 1,
+  lineHeight: 1.6,
+  blockGap: 16,
+  pageMargin: 45,
+};
 
 const moveItem = (arr: unknown[], from: number, to: number): void => {
   if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length)
@@ -62,6 +77,32 @@ const Field: React.FC<{
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+    />
+  </label>
+);
+
+const Slider: React.FC<{
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  display: (v: number) => string;
+  onChange: (v: number) => void;
+}> = ({ label, value, min, max, step, display, onChange }) => (
+  <label className="block">
+    <span className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
+      <span>{label}</span>
+      <span className="font-mono text-gray-700">{display(value)}</span>
+    </span>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={(e) => onChange(parseFloat(e.target.value))}
+      className="w-full accent-blue-600 cursor-pointer"
     />
   </label>
 );
@@ -237,6 +278,74 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     },
   });
 
+  // --- 全局排版设置 ---
+  const settings = { ...SETTING_DEFAULTS, ...(data.settings || {}) };
+  const setSetting = (k: keyof typeof SETTING_DEFAULTS, v: number) =>
+    update((d) => {
+      d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), [k]: v };
+    });
+  const resetSettings = () => update((d) => (d.settings = { ...SETTING_DEFAULTS }));
+
+  // --- 证件照 ---
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const handlePhotoFile = async (file?: File | null) => {
+    if (!file) return;
+    setPhotoBusy(true);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      update((d) => (d.basics.photo = dataUrl));
+    } catch {
+      window.alert('图片处理失败，请换一张（建议 JPG/PNG）。');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+  const removePhoto = () => update((d) => (d.basics.photo = undefined));
+
+  // --- 模块管理（顺序 / 改名 / 显隐）---
+  const resolved: ResolvedSection[] = resolveSections(data.sections);
+  const titleOf = (key: string) =>
+    resolved.find((s) => s.key === key)?.title || '';
+  // 任何模块编辑都先「物化」出完整有序配置，再改
+  const editSections = (fn: (arr: ReturnType<typeof sectionConfigFromData>) => void) =>
+    update((d) => {
+      const arr = sectionConfigFromData({ ...d, id: d.id });
+      fn(arr);
+      d.sections = arr;
+    });
+  const moveSection = (i: number, dir: number) =>
+    editSections((arr) => moveInArray(arr, i, dir));
+  const moveSectionTo = (from: number, to: number) =>
+    editSections((arr) => moveItem(arr, from, to));
+  const setSectionTitle = (i: number, v: string) =>
+    editSections((arr) => (arr[i].title = v));
+  const toggleSectionHidden = (i: number) =>
+    editSections((arr) => (arr[i].hidden = !arr[i].hidden));
+  const [secDrag, setSecDrag] = useState<number | null>(null);
+
+  // --- 工作经历下的子项目 ---
+  const addSubProject = (wi: number) =>
+    update((d) => {
+      if (!d.work) return;
+      (d.work[wi].projects ||= []).push({ name: '' });
+    });
+  const updateSubProject = (
+    wi: number,
+    pi: number,
+    fn: (p: ResumeProject) => void,
+  ) =>
+    update((d) => {
+      const p = d.work?.[wi].projects?.[pi];
+      if (p) fn(p);
+    });
+  const moveSubProject = (wi: number, pi: number, dir: number) =>
+    update((d) => {
+      const arr = d.work?.[wi].projects;
+      if (arr) moveInArray(arr, pi, dir);
+    });
+  const deleteSubProject = (wi: number, pi: number) =>
+    update((d) => d.work?.[wi].projects?.splice(pi, 1));
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex flex-col">
       {/* 顶栏 */}
@@ -376,9 +485,189 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             </div>
           </section>
 
+          {/* 全局排版设置 */}
+          <section>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
+                <Icon name="cog" className="text-blue-600" />
+                全局排版
+              </h3>
+              <button
+                type="button"
+                onClick={resetSettings}
+                className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-blue-600"
+              >
+                <Icon name="redo" />
+                恢复默认
+              </button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+              <Slider
+                label="全局字号"
+                value={settings.fontScale}
+                min={0.8}
+                max={1.25}
+                step={0.05}
+                display={(v) => `${Math.round(v * 100)}%`}
+                onChange={(v) => setSetting('fontScale', v)}
+              />
+              <Slider
+                label="行间距"
+                value={settings.lineHeight}
+                min={1.2}
+                max={2}
+                step={0.05}
+                display={(v) => v.toFixed(2)}
+                onChange={(v) => setSetting('lineHeight', v)}
+              />
+              <Slider
+                label="模块间距"
+                value={settings.blockGap}
+                min={6}
+                max={32}
+                step={1}
+                display={(v) => `${v}px`}
+                onChange={(v) => setSetting('blockGap', v)}
+              />
+              <Slider
+                label="页边距"
+                value={settings.pageMargin}
+                min={24}
+                max={72}
+                step={1}
+                display={(v) => `${v}px`}
+                onChange={(v) => setSetting('pageMargin', v)}
+              />
+            </div>
+            <p className="mt-2 text-[11px] text-gray-400">
+              作用于整份简历（预览与导出 PDF 同步生效）。
+            </p>
+          </section>
+
+          {/* 模块管理：顺序 / 改名 / 显隐 */}
+          <section>
+            <SectionHeader icon="arrows-alt" title="模块管理" />
+            <p className="-mt-1 mb-3 text-[11px] text-gray-400">
+              拖动或用箭头调整模块顺序；改名后简历分区标题随之变化；可隐藏暂不需要的模块。
+            </p>
+            <div className="space-y-2">
+              {resolved.map((sec, i) => (
+                <div
+                  key={sec.key}
+                  onDragEnter={() => {
+                    if (secDrag === null || secDrag === i) return;
+                    moveSectionTo(secDrag, i);
+                    setSecDrag(i);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
+                    secDrag === i
+                      ? 'border-blue-400 shadow-md opacity-60'
+                      : 'border-gray-200'
+                  } ${sec.hidden ? 'bg-gray-50' : 'bg-white'}`}
+                >
+                  <span
+                    draggable
+                    onDragStart={() => setSecDrag(i)}
+                    onDragEnd={() => setSecDrag(null)}
+                    title="拖拽排序"
+                    className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1"
+                  >
+                    <Icon name="arrows-alt" />
+                  </span>
+                  <Icon
+                    name={sec.icon}
+                    className={sec.hidden ? 'text-gray-300' : 'text-blue-500'}
+                  />
+                  <input
+                    type="text"
+                    value={sec.title}
+                    onChange={(e) => setSectionTitle(i, e.target.value)}
+                    className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-blue-500 px-2 py-1 text-sm outline-none ${
+                      sec.hidden ? 'text-gray-400 line-through' : 'text-gray-800'
+                    }`}
+                  />
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <IconBtn
+                      icon="arrow-up"
+                      onClick={() => moveSection(i, -1)}
+                      disabled={i === 0}
+                      title="上移"
+                    />
+                    <IconBtn
+                      icon="arrow-down"
+                      onClick={() => moveSection(i, 1)}
+                      disabled={i === resolved.length - 1}
+                      title="下移"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionHidden(i)}
+                      title={sec.hidden ? '点击显示' : '点击隐藏'}
+                      className={`px-2 h-7 rounded-md text-xs font-medium transition-colors ${
+                        sec.hidden
+                          ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      {sec.hidden ? '已隐藏' : '显示'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* 基本信息 */}
           <section>
             <SectionHeader icon="user" title="基本信息" />
+            {/* 证件照 */}
+            <div className="mb-4 flex items-center gap-4">
+              <div className="w-[76px] h-[102px] shrink-0 rounded-md border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                {data.basics.photo ? (
+                  <img
+                    src={data.basics.photo}
+                    alt="证件照预览"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Icon name="user" className="text-2xl text-gray-300" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <span className="block text-xs font-medium text-gray-500">
+                  证件照（可选）
+                </span>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                    <Icon name={photoBusy ? 'spinner' : 'image'} spin={photoBusy} />
+                    <span>{data.basics.photo ? '更换' : '上传'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        handlePhotoFile(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {data.basics.photo && (
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 border border-gray-200 hover:text-red-600 hover:bg-red-50"
+                    >
+                      <Icon name="trash" />
+                      移除
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-400 max-w-[220px]">
+                  自动压缩为小图内嵌，随简历一起保存/发布。
+                </p>
+              </div>
+            </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <Field
                 label="姓名"
@@ -430,7 +719,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <section>
             <SectionHeader
               icon="graduation-cap"
-              title="教育经历"
+              title={titleOf('education')}
               onAdd={() =>
                 update((d) => {
                   d.education ||= [];
@@ -510,7 +799,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <section>
             <SectionHeader
               icon="briefcase"
-              title="工作经历"
+              title={titleOf('work')}
               onAdd={() =>
                 update((d) => {
                   d.work ||= [];
@@ -570,6 +859,106 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       )
                     }
                   />
+
+                  {/* 子项目：同一公司下的多个项目 */}
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-white/70 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                        <Icon name="code" className="text-blue-500" />
+                        公司内项目（{(w.projects || []).length}）
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => addSubProject(i)}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                      >
+                        <Icon name="plus" />
+                        添加项目
+                      </button>
+                    </div>
+                    {(w.projects || []).map((sp, pi) => (
+                      <div
+                        key={pi}
+                        className="rounded-lg border border-gray-200 bg-gray-50/70 p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-gray-400">
+                            项目 #{pi + 1}
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            <IconBtn
+                              icon="arrow-up"
+                              onClick={() => moveSubProject(i, pi, -1)}
+                              disabled={pi === 0}
+                              title="上移"
+                            />
+                            <IconBtn
+                              icon="arrow-down"
+                              onClick={() => moveSubProject(i, pi, 1)}
+                              disabled={pi === (w.projects || []).length - 1}
+                              title="下移"
+                            />
+                            <IconBtn
+                              icon="trash"
+                              onClick={() => deleteSubProject(i, pi)}
+                              danger
+                              title="删除"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <Field
+                            label="项目名"
+                            value={sp.name}
+                            onChange={(v) =>
+                              updateSubProject(i, pi, (p) => (p.name = v))
+                            }
+                          />
+                          <Field
+                            label="角色"
+                            value={sp.role}
+                            onChange={(v) =>
+                              updateSubProject(i, pi, (p) => (p.role = v))
+                            }
+                          />
+                          <Field
+                            label="时间"
+                            value={sp.period}
+                            onChange={(v) =>
+                              updateSubProject(i, pi, (p) => (p.period = v))
+                            }
+                          />
+                          <Field
+                            label="链接"
+                            value={sp.link}
+                            onChange={(v) =>
+                              updateSubProject(i, pi, (p) => (p.link = v))
+                            }
+                          />
+                        </div>
+                        <Field
+                          label="技术栈"
+                          placeholder="逗号分隔，如 C++, Python"
+                          value={commas(sp.tech)}
+                          onChange={(v) =>
+                            updateSubProject(i, pi, (p) => (p.tech = toCommas(v)))
+                          }
+                        />
+                        <RichTextField
+                          label="项目要点"
+                          value={lines(sp.highlights)}
+                          rows={4}
+                          onChange={(v) =>
+                            updateSubProject(
+                              i,
+                              pi,
+                              (p) => (p.highlights = toLines(v)),
+                            )
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </EntryCard>
               ))}
             </div>
@@ -579,7 +968,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <section>
             <SectionHeader
               icon="code"
-              title="项目经历"
+              title={titleOf('projects')}
               onAdd={() =>
                 update((d) => {
                   d.projects ||= [];
@@ -661,7 +1050,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <section>
             <SectionHeader
               icon="cogs"
-              title="专业技能"
+              title={titleOf('skills')}
               onAdd={() =>
                 update((d) => {
                   d.skills ||= [];
@@ -709,7 +1098,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <section>
             <SectionHeader
               icon="trophy"
-              title="荣誉奖项"
+              title={titleOf('awards')}
               onAdd={() =>
                 update((d) => {
                   d.awards ||= [];

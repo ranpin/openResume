@@ -3,6 +3,7 @@ import Icon from '../Icon';
 import RichText from './RichText';
 import Paginator, { type Block } from './Paginator';
 import { THEMES, type ThemeClasses } from './resumeTheme';
+import { resolveSections, type ResolvedSection } from './resumeSections';
 import type {
   ResumeData,
   ResumeBasics,
@@ -11,13 +12,15 @@ import type {
   ResumeProject,
   ResumeSkill,
   ResumeAward,
+  ResumeSettings,
 } from '../../types/resume';
 
 /**
  * 纯展示组件：把 ResumeData 渲染成 A4 简历。
  * - classic / compact（单栏）：真·多页分页（屏幕 Paginator；打印用连续文档 + CSS 分页）。
  * - sidebar（双栏彩色侧边）：单张 A4 版式。
- * 支持多配色主题；正文富文本（RichText）。
+ * 支持多配色主题；正文富文本（RichText）；证件照；全局排版设置（字号/行距/间距/页边距）；
+ * 模块顺序 / 自定义标题 / 显隐（见 resumeSections）；工作经历可内嵌多个子项目。
  * 传 id="resume-print" 的实例的连续文档会被打印样式选中并输出为 PDF。
  */
 
@@ -30,6 +33,14 @@ interface ResumeDocumentProps {
 const clean = (arr?: string[]) => (arr || []).filter((s) => s && s.trim());
 const LIST_MARKER = /^\s*([-*+]|\d+[.)]|>|#{1,6})\s/;
 
+// 把 settings 折算成简历根节点的内联 CSS 变量（供 .resume-root 下所有 rs-* 类使用）
+const rootVars = (s?: ResumeSettings): React.CSSProperties =>
+  ({
+    '--rs-scale': s?.fontScale ?? 1,
+    '--rs-lh': s?.lineHeight ?? 1.6,
+    '--rs-gap': `${s?.blockGap ?? 16}px`,
+  }) as React.CSSProperties;
+
 const SectionTitle: React.FC<{
   icon: string;
   theme: ThemeClasses;
@@ -37,23 +48,24 @@ const SectionTitle: React.FC<{
   children: React.ReactNode;
 }> = ({ icon, theme, onDark, children }) =>
   onDark ? (
-    <h2 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-white/90 border-b border-white/30 pb-1 mb-2">
+    <h2 className="rs-h2-dark flex items-center gap-2 font-bold uppercase tracking-wide text-white/90 border-b border-white/30 pb-1 mb-2">
       <Icon name={icon} />
       {children}
     </h2>
   ) : (
     <h2
-      className={`flex items-center gap-2 text-[15px] font-bold tracking-wide text-gray-900 border-b-2 ${theme.ruleBorder} pb-1 mb-3`}
+      className={`rs-h2 flex items-center gap-2 font-bold tracking-wide text-gray-900 border-b-2 ${theme.ruleBorder} pb-1 mb-3`}
     >
       <Icon name={icon} className={theme.icon} />
       {children}
     </h2>
   );
 
-const ContactList: React.FC<{ basics: ResumeBasics; onDark?: boolean }> = ({
-  basics,
-  onDark,
-}) => {
+const ContactList: React.FC<{
+  basics: ResumeBasics;
+  onDark?: boolean;
+  align?: 'center' | 'left';
+}> = ({ basics, onDark, align = 'center' }) => {
   const items: { icon: string; text: string; href?: string }[] = [];
   if (basics.email)
     items.push({
@@ -81,8 +93,10 @@ const ContactList: React.FC<{ basics: ResumeBasics; onDark?: boolean }> = ({
     <div
       className={
         onDark
-          ? 'flex flex-col gap-1.5 text-[12px] text-white/90'
-          : 'flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px]'
+          ? 'rs-meta flex flex-col gap-1.5 text-white/90'
+          : `rs-body flex flex-wrap items-center gap-x-5 gap-y-1 ${
+              align === 'left' ? 'justify-start' : 'justify-center'
+            }`
       }
     >
       {items.map((it, i) => {
@@ -117,6 +131,21 @@ const ContactList: React.FC<{ basics: ResumeBasics; onDark?: boolean }> = ({
   );
 };
 
+// 证件照：dataURL / URL 均可；A4 上按典型证件照 3:4 比例展示
+const PhotoBox: React.FC<{ src?: string; onDark?: boolean }> = ({
+  src,
+  onDark,
+}) =>
+  src ? (
+    <img
+      src={src}
+      alt="证件照"
+      className={`resume-color-exact shrink-0 w-[76px] h-[102px] object-cover rounded-sm border ${
+        onDark ? 'border-white/30' : 'border-gray-200'
+      }`}
+    />
+  ) : null;
+
 // 要点：整块作为 Markdown 富文本渲染；未显式标记的普通行默认补成箭头列表项
 const Highlights: React.FC<{ items?: string[] }> = ({ items }) => {
   const md = clean(items)
@@ -127,7 +156,7 @@ const Highlights: React.FC<{ items?: string[] }> = ({ items }) => {
 
 const Period: React.FC<{ text?: string }> = ({ text }) =>
   text ? (
-    <span className="text-[12px] font-mono text-gray-500 shrink-0">{text}</span>
+    <span className="rs-meta font-mono text-gray-500 shrink-0">{text}</span>
   ) : null;
 
 // --- 单条目渲染（分页与侧栏共用）---
@@ -135,10 +164,10 @@ const Period: React.FC<{ text?: string }> = ({ text }) =>
 const EduEntry: React.FC<{ e: ResumeEducation }> = ({ e }) => (
   <div className="resume-block">
     <div className="flex items-baseline justify-between gap-3">
-      <h3 className="text-[14px] font-semibold text-gray-900">{e.school}</h3>
+      <h3 className="rs-h3 font-semibold text-gray-900">{e.school}</h3>
       <Period text={e.period} />
     </div>
-    <div className="text-[13px] text-gray-600">
+    <div className="rs-body text-gray-600">
       {[e.degree, e.major].filter(Boolean).join(' · ')}
       {e.gpa && <span> · GPA {e.gpa}</span>}
     </div>
@@ -146,25 +175,20 @@ const EduEntry: React.FC<{ e: ResumeEducation }> = ({ e }) => (
   </div>
 );
 
-const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
-  <div className="resume-block">
+// 项目条目：既用于独立「项目经历」，也用于工作经历下的子项目（nested）
+const ProjEntry: React.FC<{ p: ResumeProject; nested?: boolean }> = ({
+  p,
+  nested,
+}) => (
+  <div
+    className={
+      nested
+        ? 'border-l-2 border-gray-200 pl-3'
+        : 'resume-block'
+    }
+  >
     <div className="flex items-baseline justify-between gap-3">
-      <h3 className="text-[14px] font-semibold text-gray-900">
-        {w.position ? `${w.position} · ${w.company}` : w.company}
-      </h3>
-      <Period text={w.period} />
-    </div>
-    {w.location && (
-      <div className="text-[12px] text-gray-500">{w.location}</div>
-    )}
-    <Highlights items={w.highlights} />
-  </div>
-);
-
-const ProjEntry: React.FC<{ p: ResumeProject }> = ({ p }) => (
-  <div className="resume-block">
-    <div className="flex items-baseline justify-between gap-3">
-      <h3 className="text-[14px] font-semibold text-gray-900">
+      <h3 className="rs-h3 font-semibold text-gray-900">
         {p.name}
         {p.role && (
           <span className="font-normal text-gray-600"> · {p.role}</span>
@@ -173,7 +197,7 @@ const ProjEntry: React.FC<{ p: ResumeProject }> = ({ p }) => (
       <Period text={p.period} />
     </div>
     {clean(p.tech).length > 0 && (
-      <div className="text-[12px] text-gray-500 mt-0.5">
+      <div className="rs-meta text-gray-500 mt-0.5">
         {clean(p.tech).join(' / ')}
       </div>
     )}
@@ -183,7 +207,7 @@ const ProjEntry: React.FC<{ p: ResumeProject }> = ({ p }) => (
         href={p.link}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center gap-1 text-[12px] text-blue-600 hover:underline mt-1"
+        className="rs-meta inline-flex items-center gap-1 text-blue-600 hover:underline mt-1"
       >
         <Icon name="external-link-alt" />
         {p.link.replace(/^https?:\/\//, '')}
@@ -192,20 +216,42 @@ const ProjEntry: React.FC<{ p: ResumeProject }> = ({ p }) => (
   </div>
 );
 
+const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
+  <div className="resume-block">
+    <div className="flex items-baseline justify-between gap-3">
+      <h3 className="rs-h3 font-semibold text-gray-900">
+        {w.position ? `${w.position} · ${w.company}` : w.company}
+      </h3>
+      <Period text={w.period} />
+    </div>
+    {w.location && <div className="rs-meta text-gray-500">{w.location}</div>}
+    <Highlights items={w.highlights} />
+    {/* 同一公司下的多个子项目 */}
+    {w.projects && w.projects.length > 0 && (
+      <div className="mt-2 space-y-2">
+        {w.projects.map((p, i) => (
+          <ProjEntry key={i} p={p} nested />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 const SkillsBlock: React.FC<{
   items: ResumeSkill[];
   theme: ThemeClasses;
+  title: string;
   onDark?: boolean;
-}> = ({ items, theme, onDark }) => (
+}> = ({ items, theme, title, onDark }) => (
   <section>
     <SectionTitle icon="cogs" theme={theme} onDark={onDark}>
-      专业技能
+      {title}
     </SectionTitle>
     <div className="space-y-1.5">
       {items.map((s, i) => (
         <div
           key={i}
-          className={`resume-block text-[13px] ${
+          className={`resume-block rs-body ${
             onDark ? 'text-white/90' : 'text-gray-700'
           }`}
         >
@@ -226,15 +272,14 @@ const SkillsBlock: React.FC<{
 const AwardsBlock: React.FC<{
   items: ResumeAward[];
   theme: ThemeClasses;
+  title: string;
   onDark?: boolean;
-}> = ({ items, theme, onDark }) => (
+}> = ({ items, theme, title, onDark }) => (
   <section>
     <SectionTitle icon="trophy" theme={theme} onDark={onDark}>
-      荣誉奖项
+      {title}
     </SectionTitle>
-    <ul
-      className={`space-y-1 text-[13px] ${onDark ? 'text-white/90' : 'text-gray-700'}`}
-    >
+    <ul className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
       {items.map((a, i) => (
         <li
           key={i}
@@ -253,7 +298,7 @@ const AwardsBlock: React.FC<{
           </span>
           {a.date &&
             (onDark ? (
-              <span className="text-[12px] text-white/60"> （{a.date}）</span>
+              <span className="rs-meta text-white/60"> （{a.date}）</span>
             ) : (
               <Period text={a.date} />
             ))}
@@ -263,13 +308,14 @@ const AwardsBlock: React.FC<{
   </section>
 );
 
-const SummaryBlock: React.FC<{ summary: string; theme: ThemeClasses }> = ({
-  summary,
-  theme,
-}) => (
+const SummaryBlock: React.FC<{
+  summary: string;
+  theme: ThemeClasses;
+  title: string;
+}> = ({ summary, theme, title }) => (
   <section className="resume-block">
     <SectionTitle icon="user" theme={theme}>
-      个人简介
+      {title}
     </SectionTitle>
     <RichText>{summary}</RichText>
   </section>
@@ -278,45 +324,48 @@ const SummaryBlock: React.FC<{ summary: string; theme: ThemeClasses }> = ({
 const SingleHeader: React.FC<{
   basics: ResumeBasics;
   theme: ThemeClasses;
-  dense?: boolean;
-}> = ({ basics, theme, dense }) => (
-  <header className="resume-block text-center border-b border-gray-200 pb-4">
-    <h1 className={`${dense ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>
-      {basics.name}
-    </h1>
-    {basics.title && (
-      <p className={`mt-1 text-[15px] font-medium ${theme.title}`}>
-        {basics.title}
-      </p>
-    )}
-    <div className="mt-3">
-      <ContactList basics={basics} />
-    </div>
-  </header>
-);
+}> = ({ basics, theme }) => {
+  const hasPhoto = !!basics.photo;
+  return (
+    <header
+      className={`resume-block border-b border-gray-200 pb-4 ${
+        hasPhoto ? 'flex items-center gap-5 text-left' : 'text-center'
+      }`}
+    >
+      <div className={hasPhoto ? 'flex-1 min-w-0' : ''}>
+        <h1 className="rs-name font-bold text-gray-900">{basics.name}</h1>
+        {basics.title && (
+          <p className={`rs-title mt-1 font-medium ${theme.title}`}>
+            {basics.title}
+          </p>
+        )}
+        <div className="mt-3">
+          <ContactList basics={basics} align={hasPhoto ? 'left' : 'center'} />
+        </div>
+      </div>
+      {hasPhoto && <PhotoBox src={basics.photo} />}
+    </header>
+  );
+};
 
-// --- 单栏：构建可分页的内容块 ---
+// --- 单栏：按模块配置构建可分页的内容块 ---
 
 const buildBlocks = (
   data: ResumeData,
   theme: ThemeClasses,
-  dense: boolean,
+  sections: ResolvedSection[],
 ): Block[] => {
   const blocks: Block[] = [];
   blocks.push({
     key: 'header',
-    node: <SingleHeader basics={data.basics} theme={theme} dense={dense} />,
+    node: <SingleHeader basics={data.basics} theme={theme} />,
   });
-  if (data.basics.summary)
-    blocks.push({
-      key: 'summary',
-      node: <SummaryBlock summary={data.basics.summary} theme={theme} />,
-    });
 
-  const addSection = <T,>(
+  // 一个「多条目」分区：首块带标题，其余条目各成一块（便于跨页）
+  const addListSection = <T,>(
     k: string,
-    title: string,
     icon: string,
+    title: string,
     items: T[] | undefined,
     Entry: React.FC<{ item: T }>,
   ) => {
@@ -337,45 +386,149 @@ const buildBlocks = (
     }
   };
 
-  addSection('edu', '教育经历', 'graduation-cap', data.education, ({ item }) => (
-    <EduEntry e={item} />
-  ));
-  addSection('work', '工作经历', 'briefcase', data.work, ({ item }) => (
-    <WorkEntry w={item} />
-  ));
-  addSection('proj', '项目经历', 'code', data.projects, ({ item }) => (
-    <ProjEntry p={item} />
-  ));
-  if (data.skills && data.skills.length > 0)
-    blocks.push({
-      key: 'skills',
-      node: <SkillsBlock items={data.skills} theme={theme} />,
-    });
-  if (data.awards && data.awards.length > 0)
-    blocks.push({
-      key: 'awards',
-      node: <AwardsBlock items={data.awards} theme={theme} />,
-    });
+  sections.forEach((sec) => {
+    if (sec.hidden) return;
+    switch (sec.key) {
+      case 'summary':
+        if (data.basics.summary)
+          blocks.push({
+            key: 'summary',
+            node: (
+              <SummaryBlock
+                summary={data.basics.summary}
+                theme={theme}
+                title={sec.title}
+              />
+            ),
+          });
+        break;
+      case 'education':
+        addListSection('edu', sec.icon, sec.title, data.education, ({ item }) => (
+          <EduEntry e={item} />
+        ));
+        break;
+      case 'work':
+        addListSection('work', sec.icon, sec.title, data.work, ({ item }) => (
+          <WorkEntry w={item} />
+        ));
+        break;
+      case 'projects':
+        addListSection('proj', sec.icon, sec.title, data.projects, ({ item }) => (
+          <ProjEntry p={item} />
+        ));
+        break;
+      case 'skills':
+        if (data.skills && data.skills.length > 0)
+          blocks.push({
+            key: 'skills',
+            node: (
+              <SkillsBlock items={data.skills} theme={theme} title={sec.title} />
+            ),
+          });
+        break;
+      case 'awards':
+        if (data.awards && data.awards.length > 0)
+          blocks.push({
+            key: 'awards',
+            node: (
+              <AwardsBlock items={data.awards} theme={theme} title={sec.title} />
+            ),
+          });
+        break;
+    }
+  });
 
   return blocks;
 };
 
 // --- 双栏侧边模板（单张 A4）---
+// 侧栏放：联系方式 + 技能 + 荣誉；主栏放：简介 + 教育/工作/项目。
+// 顺序与显隐、自定义标题均遵循 resolveSections（各栏内部按解析顺序渲染）。
 
-const SidebarLayout: React.FC<{ data: ResumeData; theme: ThemeClasses }> = ({
-  data,
-  theme,
-}) => {
+const SidebarLayout: React.FC<{
+  data: ResumeData;
+  theme: ThemeClasses;
+  sections: ResolvedSection[];
+}> = ({ data, theme, sections }) => {
   const { basics } = data;
+  const visible = sections.filter((s) => !s.hidden);
+
+  const asideKeys = visible.filter(
+    (s) => s.key === 'skills' || s.key === 'awards',
+  );
+  const mainKeys = visible.filter(
+    (s) => s.key !== 'skills' && s.key !== 'awards',
+  );
+
+  const renderMain = (sec: ResolvedSection) => {
+    switch (sec.key) {
+      case 'summary':
+        return basics.summary ? (
+          <SummaryBlock
+            key="summary"
+            summary={basics.summary}
+            theme={theme}
+            title={sec.title}
+          />
+        ) : null;
+      case 'work':
+        return data.work && data.work.length > 0 ? (
+          <section key="work">
+            <SectionTitle icon={sec.icon} theme={theme}>
+              {sec.title}
+            </SectionTitle>
+            <div className="space-y-3">
+              {data.work.map((w, i) => (
+                <WorkEntry key={i} w={w} />
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case 'projects':
+        return data.projects && data.projects.length > 0 ? (
+          <section key="projects">
+            <SectionTitle icon={sec.icon} theme={theme}>
+              {sec.title}
+            </SectionTitle>
+            <div className="space-y-3">
+              {data.projects.map((p, i) => (
+                <ProjEntry key={i} p={p} />
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case 'education':
+        return data.education && data.education.length > 0 ? (
+          <section key="education">
+            <SectionTitle icon={sec.icon} theme={theme}>
+              {sec.title}
+            </SectionTitle>
+            <div className="space-y-3">
+              {data.education.map((e, i) => (
+                <EduEntry key={i} e={e} />
+              ))}
+            </div>
+          </section>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="grid grid-cols-[34%_1fr]">
       <aside
         className={`${theme.sidebarBg} resume-color-exact text-white px-6 py-8`}
       >
         <div className="resume-block mb-6">
-          <h1 className="text-2xl font-bold leading-tight">{basics.name}</h1>
+          {basics.photo && (
+            <div className="mb-3">
+              <PhotoBox src={basics.photo} onDark />
+            </div>
+          )}
+          <h1 className="rs-name-sm font-bold leading-tight">{basics.name}</h1>
           {basics.title && (
-            <p className="mt-1 text-[13px] text-white/80">{basics.title}</p>
+            <p className="rs-meta mt-1 text-white/80">{basics.title}</p>
           )}
         </div>
         <div className="resume-block mb-6">
@@ -384,56 +537,31 @@ const SidebarLayout: React.FC<{ data: ResumeData; theme: ThemeClasses }> = ({
           </SectionTitle>
           <ContactList basics={basics} onDark />
         </div>
-        {data.skills && data.skills.length > 0 && (
-          <div className="mb-6">
-            <SkillsBlock items={data.skills} theme={theme} onDark />
-          </div>
-        )}
-        {data.awards && data.awards.length > 0 && (
-          <AwardsBlock items={data.awards} theme={theme} onDark />
+        {asideKeys.map((sec) =>
+          sec.key === 'skills' && data.skills && data.skills.length > 0 ? (
+            <div key="skills" className="mb-6">
+              <SkillsBlock
+                items={data.skills}
+                theme={theme}
+                title={sec.title}
+                onDark
+              />
+            </div>
+          ) : sec.key === 'awards' && data.awards && data.awards.length > 0 ? (
+            <div key="awards" className="mb-6">
+              <AwardsBlock
+                items={data.awards}
+                theme={theme}
+                title={sec.title}
+                onDark
+              />
+            </div>
+          ) : null,
         )}
       </aside>
 
       <div className="px-8 py-8 space-y-6">
-        {basics.summary && (
-          <SummaryBlock summary={basics.summary} theme={theme} />
-        )}
-        {data.work && data.work.length > 0 && (
-          <section>
-            <SectionTitle icon="briefcase" theme={theme}>
-              工作经历
-            </SectionTitle>
-            <div className="space-y-3">
-              {data.work.map((w, i) => (
-                <WorkEntry key={i} w={w} />
-              ))}
-            </div>
-          </section>
-        )}
-        {data.projects && data.projects.length > 0 && (
-          <section>
-            <SectionTitle icon="code" theme={theme}>
-              项目经历
-            </SectionTitle>
-            <div className="space-y-3">
-              {data.projects.map((p, i) => (
-                <ProjEntry key={i} p={p} />
-              ))}
-            </div>
-          </section>
-        )}
-        {data.education && data.education.length > 0 && (
-          <section>
-            <SectionTitle icon="graduation-cap" theme={theme}>
-              教育经历
-            </SectionTitle>
-            <div className="space-y-3">
-              {data.education.map((e, i) => (
-                <EduEntry key={i} e={e} />
-              ))}
-            </div>
-          </section>
-        )}
+        {mainKeys.map((sec) => renderMain(sec))}
       </div>
     </div>
   );
@@ -446,20 +574,24 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
 }) => {
   const theme = THEMES[data.theme || 'blue'];
   const template = data.template || 'classic';
+  const sections = resolveSections(data.sections);
+  const style = rootVars(data.settings);
+  const pageMargin = data.settings?.pageMargin ?? 45;
+  const dense = template === 'compact';
 
   if (template === 'sidebar') {
     return (
       <div
         id={id}
-        className={`resume-page bg-white text-gray-800 mx-auto w-full max-w-[820px] ${className}`}
+        style={style}
+        className={`resume-root resume-page bg-white text-gray-800 mx-auto w-full max-w-[820px] ${className}`}
       >
-        <SidebarLayout data={data} theme={theme} />
+        <SidebarLayout data={data} theme={theme} sections={sections} />
       </div>
     );
   }
 
-  const dense = template === 'compact';
-  const blocks = buildBlocks(data, theme, dense);
+  const blocks = buildBlocks(data, theme, sections);
   const signature = JSON.stringify(data);
 
   return (
@@ -467,7 +599,10 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
       {/* 打印用：连续文档（屏幕隐藏），承载 id 作为打印目标 */}
       <div
         id={id}
-        className="resume-print-only bg-white text-gray-800 mx-auto w-full max-w-[820px] px-8 py-10"
+        style={{ ...style, padding: pageMargin }}
+        className={`resume-root${
+          dense ? ' dense' : ''
+        } resume-print-only bg-white text-gray-800 mx-auto w-full max-w-[820px]`}
       >
         {blocks.map((b) => (
           <div key={b.key} className="rt-pageblock">
@@ -477,7 +612,13 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
       </div>
 
       {/* 屏幕用：真·多页 A4 */}
-      <Paginator blocks={blocks} signature={signature} />
+      <Paginator
+        blocks={blocks}
+        signature={signature}
+        pad={pageMargin}
+        rootStyle={style}
+        dense={dense}
+      />
     </div>
   );
 };

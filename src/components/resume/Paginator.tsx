@@ -5,12 +5,10 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  * 打印用连续文档 + CSS 分页（见 ResumeDocument 的 resume-print-only），此组件为 resume-screen-only。
  */
 
-// A4 @96dpi：794 × 1123；四周留白 45px
+// A4 @96dpi：794 × 1123
 const PAGE_W = 794;
 const PAGE_H = 1123;
-const PAD = 45;
-const CONTENT_W = PAGE_W - PAD * 2; // 704
-const BUDGET = PAGE_H - PAD * 2; // 1033
+const DEFAULT_PAD = 45;
 
 export interface Block {
   key: string;
@@ -19,10 +17,21 @@ export interface Block {
 
 interface PaginatorProps {
   blocks: Block[];
-  signature: string; // 内容/模板/主题指纹，变化时重新分页
+  signature: string; // 内容/模板/主题/排版指纹，变化时重新分页
+  pad?: number; // A4 页边距(px)，随全局排版设置变化
+  rootStyle?: React.CSSProperties; // 排版 CSS 变量，下发到测量层与页面（须一致以保证测高准确）
+  dense?: boolean; // compact 模板
 }
 
-const Paginator: React.FC<PaginatorProps> = ({ blocks, signature }) => {
+const Paginator: React.FC<PaginatorProps> = ({
+  blocks,
+  signature,
+  pad = DEFAULT_PAD,
+  rootStyle,
+  dense,
+}) => {
+  const CONTENT_W = PAGE_W - pad * 2;
+  const BUDGET = PAGE_H - pad * 2;
   const measureRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<number[][]>([blocks.map((_, i) => i)]);
   const [bump, setBump] = useState(0);
@@ -63,7 +72,10 @@ const Paginator: React.FC<PaginatorProps> = ({ blocks, signature }) => {
   }, [signature, bump]);
 
   return (
-    <div className="resume-screen-only flex flex-col items-center gap-6">
+    <div
+      style={rootStyle}
+      className={`resume-root${dense ? ' dense' : ''} resume-screen-only flex flex-col items-center gap-6`}
+    >
       {/* 隐藏测量层 */}
       <div
         ref={measureRef}
@@ -83,7 +95,7 @@ const Paginator: React.FC<PaginatorProps> = ({ blocks, signature }) => {
         <div
           key={p}
           className="resume-sheet bg-white shadow-lg relative shrink-0"
-          style={{ width: PAGE_W, minHeight: PAGE_H, padding: PAD }}
+          style={{ width: PAGE_W, minHeight: PAGE_H, padding: pad }}
         >
           {idxs.map((i) => (
             <div key={blocks[i].key} className="rt-pageblock">

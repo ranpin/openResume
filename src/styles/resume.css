@@ -13,14 +13,52 @@
   }
 }
 
+/* 全局排版设置：由 data.settings 通过内联 CSS 变量下发到 .resume-root。
+   字号统一用 calc(基准px * --rs-scale) 表达，行距/块间距用变量，实现「一处调、全局变」。 */
+.resume-root {
+  --rs-scale: 1;
+  --rs-lh: 1.6;
+  --rs-gap: 16px;
+}
+
+/* 各字号档位（基准 px × 全局倍率）*/
+.rs-name {
+  font-size: calc(30px * var(--rs-scale));
+}
+.resume-root.dense .rs-name {
+  font-size: calc(24px * var(--rs-scale));
+}
+.rs-name-sm {
+  font-size: calc(22px * var(--rs-scale));
+}
+.rs-title {
+  font-size: calc(15px * var(--rs-scale));
+}
+.rs-h2 {
+  font-size: calc(15px * var(--rs-scale));
+}
+.rs-h2-dark {
+  font-size: calc(12px * var(--rs-scale));
+}
+.rs-h3 {
+  font-size: calc(14px * var(--rs-scale));
+}
+.rs-body {
+  font-size: calc(13px * var(--rs-scale));
+  line-height: var(--rs-lh);
+}
+.rs-meta {
+  font-size: calc(12px * var(--rs-scale));
+}
+
 /* 每个可分页内容块之间的间距（用 padding 让测量 offsetHeight 计入）*/
 .rt-pageblock {
-  padding-bottom: 16px;
+  padding-bottom: var(--rs-gap);
 }
 
 .resume-rt {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: calc(13px * var(--rs-scale));
+  line-height: var(--rs-lh);
   color: #374151; /* gray-700 */
 }
 
