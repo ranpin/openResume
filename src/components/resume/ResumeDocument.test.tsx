@@ -91,6 +91,29 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/交付了甲/).length).toBeGreaterThan(0);
   });
 
+  it('does not crash when blocks shrink between renders (hiding modules)', () => {
+    // 回归：Paginator 的 pages 是 state，隐藏模块使 blocks 变少时，
+    // 本次渲染会先带旧索引跑一遍，越界的 blocks[i] 曾导致 “reading 'node'” 崩溃。
+    const rich: ResumeData = {
+      ...base,
+      projects: [{ name: 'P' }],
+      awards: [{ title: 'A' }],
+    };
+    const { rerender } = render(<ResumeDocument data={rich} />);
+    const allHidden: ResumeData = {
+      ...rich,
+      sections: [
+        { key: 'summary', hidden: true },
+        { key: 'education', hidden: true },
+        { key: 'work', hidden: true },
+        { key: 'projects', hidden: true },
+        { key: 'skills', hidden: true },
+        { key: 'awards', hidden: true },
+      ],
+    };
+    expect(() => rerender(<ResumeDocument data={allHidden} />)).not.toThrow();
+  });
+
   it('honors custom section titles, order and hidden flags', () => {
     const { container } = render(
       <ResumeDocument

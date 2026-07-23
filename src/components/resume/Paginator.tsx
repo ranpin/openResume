@@ -97,11 +97,18 @@ const Paginator: React.FC<PaginatorProps> = ({
           className="resume-sheet bg-white shadow-lg relative shrink-0"
           style={{ width: PAGE_W, minHeight: PAGE_H, padding: pad }}
         >
-          {idxs.map((i) => (
-            <div key={blocks[i].key} className="rt-pageblock">
-              {blocks[i].node}
-            </div>
-          ))}
+          {idxs.map((i) => {
+            // pages 是 state，仅在 useLayoutEffect 里重排；当 blocks 因隐藏/删除/
+            // 排序而变少时，本次渲染会先带着旧的 pages 索引跑一遍，此时 blocks[i]
+            // 可能越界为 undefined。跳过越界项，等 effect 同步重排即恢复。
+            const b = blocks[i];
+            if (!b) return null;
+            return (
+              <div key={b.key} className="rt-pageblock">
+                {b.node}
+              </div>
+            );
+          })}
           <div className="absolute bottom-3 right-4 text-[10px] text-gray-400">
             第 {p + 1} / {pages.length} 页
           </div>
