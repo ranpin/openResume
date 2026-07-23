@@ -9,7 +9,15 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- 首屏占位：JS/字体加载期间（尤其被主站 iframe 内嵌、冷启动需下载数百 KB 时）
+         先显示加载态，避免整块空白看起来像坏掉。React 挂载后会替换掉本节点内容。 -->
+    <div id="boot" style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;color:#6b7280">
+      <div style="width:34px;height:34px;border:3px solid #dbeafe;border-top-color:#2563eb;border-radius:50%;animation:bootspin .8s linear infinite"></div>
+      <div style="font-size:14px">简历中心加载中…</div>
+    </div>
+  </div>
+  <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
