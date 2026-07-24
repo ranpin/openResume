@@ -754,6 +754,15 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       }
                     />
                     <Field
+                      label="学院"
+                      value={e.college}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.education && (d.education[i].college = v),
+                        )
+                      }
+                    />
+                    <Field
                       label="时间"
                       value={e.period}
                       onChange={(v) =>

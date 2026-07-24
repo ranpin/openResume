@@ -163,14 +163,21 @@ const Period: React.FC<{ text?: string }> = ({ text }) =>
 
 const EduEntry: React.FC<{ e: ResumeEducation }> = ({ e }) => (
   <div className="resume-block">
-    <div className="flex items-baseline justify-between gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900">{e.school}</h3>
-      <Period text={e.period} />
+    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
+      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{e.school}</h3>
+      <span className="rs-h3 font-normal text-gray-600 text-center">
+        {e.college}
+      </span>
+      <div className="text-right whitespace-nowrap">
+        <Period text={e.period} />
+      </div>
     </div>
-    <div className="rs-body text-gray-600">
-      {[e.degree, e.major].filter(Boolean).join(' · ')}
-      {e.gpa && <span> · GPA {e.gpa}</span>}
-    </div>
+    {(e.degree || e.major || e.gpa) && (
+      <div className="rs-body text-gray-600">
+        {[e.degree, e.major].filter(Boolean).join(' · ')}
+        {e.gpa && <span> · GPA {e.gpa}</span>}
+      </div>
+    )}
     {e.detail && <RichText className="mt-0.5">{e.detail}</RichText>}
   </div>
 );
@@ -187,14 +194,14 @@ const ProjEntry: React.FC<{ p: ResumeProject; nested?: boolean }> = ({
         : 'resume-block'
     }
   >
-    <div className="flex items-baseline justify-between gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900">
-        {p.name}
-        {p.role && (
-          <span className="font-normal text-gray-600"> · {p.role}</span>
-        )}
-      </h3>
-      <Period text={p.period} />
+    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
+      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{p.name}</h3>
+      <span className="rs-h3 font-normal text-gray-600 text-center">
+        {p.role}
+      </span>
+      <div className="text-right whitespace-nowrap">
+        <Period text={p.period} />
+      </div>
     </div>
     {clean(p.tech).length > 0 && (
       <div className="rs-meta text-gray-500 mt-0.5">
@@ -218,11 +225,16 @@ const ProjEntry: React.FC<{ p: ResumeProject; nested?: boolean }> = ({
 
 const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
   <div className="resume-block">
-    <div className="flex items-baseline justify-between gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900">
-        {w.position ? `${w.position} · ${w.company}` : w.company}
+    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
+      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">
+        {w.company}
       </h3>
-      <Period text={w.period} />
+      <span className="rs-h3 font-normal text-gray-600 text-center">
+        {w.position}
+      </span>
+      <div className="text-right whitespace-nowrap">
+        <Period text={w.period} />
+      </div>
     </div>
     {w.location && <div className="rs-meta text-gray-500">{w.location}</div>}
     <Highlights items={w.highlights} />

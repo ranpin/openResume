@@ -23,6 +23,45 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/做了 X/).length).toBeGreaterThan(0);
   });
 
+  it('aligns entry headers: name left, role center, period right', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          education: [
+            {
+              school: 'S1',
+              college: '计算机学院',
+              degree: '本科',
+              major: 'CS',
+              period: '2021 - 2025',
+            },
+          ],
+          work: [{ company: 'ACME', position: '开发', period: '2025 - 至今' }],
+          projects: [{ name: 'P1', role: '负责人', period: '2026' }],
+        }}
+        id="resume-print"
+      />,
+    );
+    for (const [name, role, period] of [
+      ['S1', '计算机学院', '2021 - 2025'],
+      ['ACME', '开发', '2025 - 至今'],
+      ['P1', '负责人', '2026'],
+    ] as const) {
+      const row = screen.getAllByText(name)[0].closest('.grid') as HTMLElement;
+      expect(row.className).toContain('grid-cols-[1fr_auto_1fr]');
+      const cells = Array.from(row.children) as HTMLElement[];
+      expect(cells).toHaveLength(3);
+      expect(cells[0].textContent).toBe(name);
+      expect(cells[1].textContent).toBe(role);
+      expect(cells[1].className).toContain('text-center');
+      expect(cells[2].textContent).toBe(period);
+      expect(cells[2].className).toContain('text-right');
+    }
+    // 学历·专业·GPA 仍在标题行下方
+    expect(screen.getAllByText('本科 · CS').length).toBeGreaterThan(0);
+  });
+
   it('sets id on the print document (print target)', () => {
     const { container } = render(
       <ResumeDocument data={base} id="resume-print" />,

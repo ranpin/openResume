@@ -18,6 +18,7 @@ export interface ResumeBasics {
 
 export interface ResumeEducation {
   school: string;
+  college?: string; // 学院，标题行居中展示
   degree?: string;
   major?: string;
   period?: string;
