@@ -217,4 +217,29 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/主修课程：/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/高等数学、数据结构/).length).toBeGreaterThan(0);
   });
+
+  it('renders skill proficiency dots when levels are set', () => {
+    const { container } = render(
+      <ResumeDocument
+        data={{
+          ...base,
+          skills: [
+            {
+              category: '语言',
+              items: ['C++', 'Python'],
+              levels: { 'C++': '精通', Python: '熟悉' },
+            },
+          ],
+        }}
+        id="resume-print"
+      />,
+    );
+    const cpp = container.querySelector('[title="精通"]');
+    const py = container.querySelector('[title="熟悉"]');
+    expect(cpp).not.toBeNull();
+    expect(py).not.toBeNull();
+    // 精通=4 实心圆点，熟悉=2
+    expect(cpp!.querySelectorAll('.bg-gray-700').length).toBe(4);
+    expect(py!.querySelectorAll('.bg-gray-700').length).toBe(2);
+  });
 });
