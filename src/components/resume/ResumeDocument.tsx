@@ -4,6 +4,7 @@ import RichText from './RichText';
 import Paginator, { type Block } from './Paginator';
 import { THEMES, type ThemeClasses } from './resumeTheme';
 import { resolveSections, type ResolvedSection } from './resumeSections';
+import { fontStack } from './resumeFonts';
 import type {
   ResumeData,
   ResumeBasics,
@@ -42,6 +43,9 @@ const rootVars = (s?: ResumeSettings): React.CSSProperties =>
     '--rs-scale': s?.fontScale ?? 1,
     '--rs-lh': s?.lineHeight ?? 1.6,
     '--rs-gap': `${s?.blockGap ?? 16}px`,
+    ...(fontStack(s?.fontFamily)
+      ? { fontFamily: fontStack(s?.fontFamily) }
+      : {}),
   }) as React.CSSProperties;
 
 const SectionTitle: React.FC<{
