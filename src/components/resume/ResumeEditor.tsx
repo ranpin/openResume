@@ -2,6 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import Icon from '../Icon';
 import ResumeDocument from './ResumeDocument';
 import RichTextField from './RichTextField';
+import PeriodField from './PeriodField';
 import {
   cloneResume,
   downloadResumeYaml,
@@ -762,7 +763,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         )
                       }
                     />
-                    <Field
+                    <PeriodField
                       label="时间"
                       value={e.period}
                       onChange={(v) =>
@@ -843,7 +844,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         update((d) => d.work && (d.work[i].position = v))
                       }
                     />
-                    <Field
+                    <PeriodField
                       label="时间"
                       value={w.period}
                       onChange={(v) =>
@@ -930,7 +931,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                               updateSubProject(i, pi, (p) => (p.role = v))
                             }
                           />
-                          <Field
+                          <PeriodField
                             label="时间"
                             value={sp.period}
                             onChange={(v) =>
@@ -1016,7 +1017,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         update((d) => d.projects && (d.projects[i].role = v))
                       }
                     />
-                    <Field
+                    <PeriodField
                       label="时间"
                       value={p.period}
                       onChange={(v) =>
