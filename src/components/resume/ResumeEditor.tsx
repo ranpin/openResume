@@ -34,6 +34,7 @@ import {
 import { useResumeStore } from '../../store/useResumeStore';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
+const AiPolishPanel = lazy(() => import('./AiPolishPanel'));
 import type {
   ResumeData,
   ResumeProject,
@@ -327,6 +328,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
   const lines = (arr?: string[]) => (arr || []).join('\n');
   const toLines = (v: string) => v.split('\n');
+
+  // AI 润色要点：记录当前正在润色的要点及写回方式（BYOK，lazy 对话框）
+  const [polish, setPolish] = useState<{
+    lines: string[];
+    apply: (lines: string[]) => void;
+  } | null>(null);
+  const openPolish = (
+    highlights: string[] | undefined,
+    apply: (lines: string[]) => void,
+  ) => setPolish({ lines: highlights || [], apply });
 
   // 显式「保存」：改动本就实时自动存本地草稿，这里给明确反馈；
   // 若内容与已发布版本一致，则清掉草稿（不再显示「未发布」）。
@@ -1017,6 +1028,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         (d) => d.work && (d.work[i].highlights = toLines(v)),
                       )
                     }
+                    onPolish={() =>
+                      openPolish(w.highlights, (ls) =>
+                        update(
+                          (d) => d.work && (d.work[i].highlights = ls),
+                        ),
+                      )
+                    }
                   />
 
                   {/* 子项目：同一公司下的多个项目 */}
@@ -1114,6 +1132,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                               (p) => (p.highlights = toLines(v)),
                             )
                           }
+                          onPolish={() =>
+                            openPolish(sp.highlights, (ls) =>
+                              updateSubProject(i, pi, (p) => (p.highlights = ls)),
+                            )
+                          }
                         />
                       </div>
                     ))}
@@ -1203,6 +1226,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       update(
                         (d) =>
                           d.projects && (d.projects[i].highlights = toLines(v)),
+                      )
+                    }
+                    onPolish={() =>
+                      openPolish(p.highlights, (ls) =>
+                        update(
+                          (d) => d.projects && (d.projects[i].highlights = ls),
+                        ),
                       )
                     }
                   />
@@ -1578,6 +1608,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                           d.activities && (d.activities[i].highlights = toLines(v)),
                       )
                     }
+                    onPolish={() =>
+                      openPolish(a.highlights, (ls) =>
+                        update(
+                          (d) =>
+                            d.activities && (d.activities[i].highlights = ls),
+                        ),
+                      )
+                    }
                   />
                 </EntryCard>
               ))}
@@ -1637,6 +1675,20 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             resumeId={resumeId}
             data={data}
             onClose={() => setPublishOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* AI 润色要点（BYOK） */}
+      {polish && (
+        <Suspense fallback={null}>
+          <AiPolishPanel
+            lines={polish.lines}
+            onApply={(ls) => {
+              polish.apply(ls);
+              setPolish(null);
+            }}
+            onClose={() => setPolish(null)}
           />
         </Suspense>
       )}
