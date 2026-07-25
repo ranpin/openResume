@@ -11,6 +11,7 @@ import type { ResumeData } from '../types/resume';
 // 编辑器 / AI / 发布面板仅在打开时才需要，按需加载（并避免进入 SSG 预渲染树）
 const ResumeEditor = lazy(() => import('./resume/ResumeEditor'));
 const AiGeneratePanel = lazy(() => import('./resume/AiGeneratePanel'));
+const AiTranslatePanel = lazy(() => import('./resume/AiTranslatePanel'));
 const PublishDialog = lazy(() => import('./resume/PublishDialog'));
 
 interface ResumeSectionProps {
@@ -50,6 +51,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const [view, setView] = useState<View>('resume');
   const [editing, setEditing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
 
   const drafts = useResumeStore((s) => s.drafts);
@@ -66,9 +68,18 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
     setHydrated(true);
   }, [setHydrated]);
 
-  const selectedId = activeId && resumes.some((r) => r.id === activeId)
+  // 草稿型简历：仅存在于本地草稿、不在 content/resumes 里（如 AI 翻译生成的英文版）。
+  // 水合后合并进切换栏，使其可查看 / 编辑 / 导出 / 发布。
+  const draftOnly: { id: string; label: string }[] = hydrated
+    ? Object.keys(drafts)
+        .filter((id) => !resumes.some((r) => r.id === id))
+        .map((id) => ({ id, label: drafts[id].label || id }))
+    : [];
+  const allResumes = [...resumes, ...draftOnly];
+
+  const selectedId = activeId && allResumes.some((r) => r.id === activeId)
     ? activeId
-    : resumes[0]?.id;
+    : allResumes[0]?.id;
   const published = resumes.find((r) => r.id === selectedId);
   // 有草稿则展示草稿（水合后），否则展示已发布版本
   const current: ResumeData | undefined =
@@ -131,9 +142,9 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
         </div>
       ) : (
         <div>
-          {/* 简历横排：多份简历切换 */}
+          {/* 简历横排：多份简历切换（含 AI 翻译生成的英文版草稿）*/}
           <div className="mb-5 flex flex-wrap gap-3">
-            {resumes.map((r) => {
+            {allResumes.map((r) => {
               const active = r.id === selectedId;
               const edited = hydrated && isDirty(r.id);
               return (
@@ -192,6 +203,11 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               label="AI 生成"
               onClick={() => setAiOpen(true)}
             />
+            <ToolbarButton
+              icon="language"
+              label="翻译成英文"
+              onClick={() => setTranslateOpen(true)}
+            />
             {hydrated && hasDraft && selectedId && (
               <button
                 onClick={() => resetDraft(selectedId)}
@@ -223,11 +239,11 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
       )}
 
       {/* 编辑器（超级简历式双栏）*/}
-      {editing && published && selectedId && (
+      {editing && current && selectedId && (
         <Suspense fallback={null}>
           <ResumeEditor
             resumeId={selectedId}
-            published={published}
+            published={published ?? current}
             onClose={() => setEditing(false)}
           />
         </Suspense>
@@ -240,6 +256,17 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             resumeId={selectedId}
             baseData={current}
             onClose={() => setAiOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* AI 翻译 / 中英双版 */}
+      {translateOpen && current && selectedId && (
+        <Suspense fallback={null}>
+          <AiTranslatePanel
+            resumeId={selectedId}
+            baseData={current}
+            onClose={() => setTranslateOpen(false)}
           />
         </Suspense>
       )}

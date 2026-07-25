@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { extractJson, polishHighlights } from './aiGenerate';
+import { extractJson, polishHighlights, translateResume } from './aiGenerate';
+import type { ResumeData } from '../../types/resume';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -104,6 +105,52 @@ describe('polishHighlights', () => {
         model: 'claude-sonnet-5',
         highlights: ['a'],
       }),
+    ).rejects.toThrow('invalid x-api-key');
+  });
+});
+
+const BASE_RESUME: ResumeData = {
+  id: '01-default',
+  label: '算法岗·2026',
+  template: 'classic',
+  theme: 'blue',
+  basics: { name: '张三', title: '前端工程师', summary: '五年经验' },
+  work: [{ company: '某公司', position: '前端', highlights: ['负责重构'] }],
+};
+
+describe('translateResume', () => {
+  it('returns the translated ResumeData from the model', async () => {
+    const translated: ResumeData = {
+      ...BASE_RESUME,
+      label: 'Algorithm · 2026',
+      basics: { name: 'Zhang San', title: 'Frontend Engineer', summary: 'Five years' },
+    };
+    mockFetchReturning(translated);
+    const out = await translateResume({
+      apiKey: 'sk-test',
+      model: 'claude-sonnet-5',
+      base: BASE_RESUME,
+    });
+    expect(out.basics.title).toBe('Frontend Engineer');
+    expect(out.label).toBe('Algorithm · 2026');
+  });
+
+  it('throws when the model returns an invalid resume (no basics)', async () => {
+    mockFetchReturning({ label: 'x' });
+    await expect(
+      translateResume({ apiKey: 'sk-test', model: 'claude-sonnet-5', base: BASE_RESUME }),
+    ).rejects.toThrow(/不是有效的简历/);
+  });
+
+  it('surfaces API errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: 'invalid x-api-key' } }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    await expect(
+      translateResume({ apiKey: 'bad', model: 'claude-sonnet-5', base: BASE_RESUME }),
     ).rejects.toThrow('invalid x-api-key');
   });
 });
