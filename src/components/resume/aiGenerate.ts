@@ -171,3 +171,33 @@ ${JSON.stringify(cleaned, null, 2)}
   }
   return result;
 }
+
+const TRANSLATE_SYSTEM = `你是专业的简历翻译，把简历翻译成地道、专业的英文。
+规则：
+- 只输出一个 JSON 对象，结构与输入的 ResumeData 完全一致，禁止输出解释或 markdown 代码块；
+- 翻译所有面向人类阅读的文本为英文：label、target，basics 的 title/summary/location，education 的 school/college/degree/major/courses/detail，work 的 company/position/location/highlights 及其内嵌 projects，projects 的 name/role/highlights，skills 的 category/items，awards 的 title/issuer，certificates 的 name/issuer，languages 的 name/level，activities 的 name/role/highlights，interests，以及 sections 里的自定义 title；
+- 保留专有名词与技术栈原名（如 React、TypeScript、Kubernetes、Vue、GitHub 等）不翻译；
+- 以下字段原样保留不动：id、basics.name（人名可转为拼音或英文写法）、email、phone、website、github、photo、avatar、所有 link、各类 period/date 的数字与格式、template、theme、settings、sections 的 key 与 hidden、skills.levels 的键与值（了解/熟悉/掌握/精通 保持不变）；
+- 英文要点用动词开头、简洁有力，可保留 **粗体** 标记；
+- 不要编造新的经历或数字，不要增删条目，保持条数与顺序不变。`;
+
+export interface TranslateOpts {
+  apiKey: string;
+  model: string;
+  base: ResumeData;
+  signal?: AbortSignal;
+}
+
+// AI 翻译：把整份简历翻译成英文版，保留结构 / 模块 / 排版设置，返回新的 ResumeData。
+export async function translateResume(opts: TranslateOpts): Promise<ResumeData> {
+  const { apiKey, model, base, signal } = opts;
+  const user = `请把下面这份简历(JSON)翻译成英文，输出同样结构的 ResumeData JSON：
+${JSON.stringify(base)}`;
+
+  const text = await callAnthropic(apiKey, model, TRANSLATE_SYSTEM, user, 4096, signal);
+  const parsed = extractJson(text) as ResumeData;
+  if (!parsed || !parsed.basics) {
+    throw new Error('模型返回的内容不是有效的简历 JSON');
+  }
+  return parsed;
+}
