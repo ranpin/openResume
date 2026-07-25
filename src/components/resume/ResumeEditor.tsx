@@ -543,8 +543,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         </div>
       </div>
 
-      {/* 双栏主体 */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2">
+      {/* 双栏主体：表单左、预览右。md(768px) 起即左右布局——
+          编辑器是全屏覆盖层，用户预期始终是超级简历式左右双栏，
+          仅窄于 768px（手机）才退化为上下堆叠 */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2">
         {/* 左：表单 */}
         <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
           {/* 简历诊断：完成度 + 智能检查 */}
