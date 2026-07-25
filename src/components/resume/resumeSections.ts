@@ -16,6 +16,10 @@ export const SECTION_META: Record<
   projects: { title: '项目经历', icon: 'code' },
   skills: { title: '专业技能', icon: 'cogs' },
   awards: { title: '荣誉奖项', icon: 'trophy' },
+  certificates: { title: '资格证书', icon: 'certificate' },
+  languages: { title: '语言能力', icon: 'language' },
+  activities: { title: '校园活动', icon: 'users' },
+  interests: { title: '兴趣爱好', icon: 'heart' },
 };
 
 // 缺省顺序（未配置 sections 时）
@@ -26,6 +30,10 @@ export const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
   'projects',
   'skills',
   'awards',
+  'certificates',
+  'languages',
+  'activities',
+  'interests',
 ];
 
 export interface ResolvedSection {

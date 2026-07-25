@@ -177,4 +177,44 @@ describe('ResumeDocument', () => {
     const text = root.textContent || '';
     expect(text.indexOf('技能栈')).toBeLessThan(text.indexOf('职业经历'));
   });
+
+  it('renders new modules: certificates, languages, activities, interests', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          certificates: [{ name: 'CFA 一级', issuer: 'CFA Institute', date: '2025' }],
+          languages: [{ name: '英语', level: 'CET-6' }],
+          activities: [{ name: '学生会', role: '主席', period: '2023 - 2024' }],
+          interests: ['篮球', '摄影'],
+        }}
+        id="resume-print"
+      />,
+    );
+    expect(screen.getAllByText('资格证书').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CFA 一级/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('语言能力').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('英语').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CET-6').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('校园活动').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('学生会').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('兴趣爱好').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('篮球、摄影').length).toBeGreaterThan(0);
+  });
+
+  it('renders education 主修课程 line', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          education: [
+            { school: 'S1', degree: '本科', major: 'CS', courses: '高等数学、数据结构' },
+          ],
+        }}
+        id="resume-print"
+      />,
+    );
+    expect(screen.getAllByText(/主修课程：/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/高等数学、数据结构/).length).toBeGreaterThan(0);
+  });
 });

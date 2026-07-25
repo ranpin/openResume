@@ -12,6 +12,9 @@ import type {
   ResumeProject,
   ResumeSkill,
   ResumeAward,
+  ResumeCertificate,
+  ResumeLanguage,
+  ResumeActivity,
   ResumeSettings,
 } from '../../types/resume';
 
@@ -178,6 +181,12 @@ const EduEntry: React.FC<{ e: ResumeEducation }> = ({ e }) => (
         {e.gpa && <span> · GPA {e.gpa}</span>}
       </div>
     )}
+    {e.courses && (
+      <div className="rs-body text-gray-600">
+        <span className="text-gray-500">主修课程：</span>
+        {e.courses}
+      </div>
+    )}
     {e.detail && <RichText className="mt-0.5">{e.detail}</RichText>}
   </div>
 );
@@ -320,6 +329,112 @@ const AwardsBlock: React.FC<{
   </section>
 );
 
+const CertificatesBlock: React.FC<{
+  items: ResumeCertificate[];
+  theme: ThemeClasses;
+  title: string;
+  onDark?: boolean;
+}> = ({ items, theme, title, onDark }) => (
+  <section>
+    <SectionTitle icon="certificate" theme={theme} onDark={onDark}>
+      {title}
+    </SectionTitle>
+    <ul
+      className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
+    >
+      {items.map((c, i) => (
+        <li
+          key={i}
+          className={`resume-block ${
+            onDark ? '' : 'flex items-baseline justify-between gap-3'
+          }`}
+        >
+          <span>
+            {c.name}
+            {c.issuer && (
+              <span className={onDark ? 'text-white/70' : 'text-gray-500'}>
+                {' '}
+                · {c.issuer}
+              </span>
+            )}
+          </span>
+          {c.date &&
+            (onDark ? (
+              <span className="rs-meta text-white/60"> （{c.date}）</span>
+            ) : (
+              <Period text={c.date} />
+            ))}
+        </li>
+      ))}
+    </ul>
+  </section>
+);
+
+const LanguagesBlock: React.FC<{
+  items: ResumeLanguage[];
+  theme: ThemeClasses;
+  title: string;
+  onDark?: boolean;
+}> = ({ items, theme, title, onDark }) => (
+  <section>
+    <SectionTitle icon="language" theme={theme} onDark={onDark}>
+      {title}
+    </SectionTitle>
+    <ul
+      className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
+    >
+      {items.map((l, i) => (
+        <li
+          key={i}
+          className={`resume-block ${
+            onDark ? '' : 'flex items-baseline justify-between gap-3'
+          }`}
+        >
+          <span>{l.name}</span>
+          {l.level && (
+            <span
+              className={onDark ? 'rs-meta text-white/70' : 'rs-meta text-gray-500'}
+            >
+              {l.level}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+);
+
+const ActivityEntry: React.FC<{ a: ResumeActivity }> = ({ a }) => (
+  <div className="resume-block">
+    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
+      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{a.name}</h3>
+      <span className="rs-h3 font-normal text-gray-600 text-center">
+        {a.role}
+      </span>
+      <div className="text-right whitespace-nowrap">
+        <Period text={a.period} />
+      </div>
+    </div>
+    <Highlights items={a.highlights} />
+  </div>
+);
+
+const InterestsBlock: React.FC<{
+  items: string[];
+  theme: ThemeClasses;
+  title: string;
+  onDark?: boolean;
+}> = ({ items, theme, title, onDark }) => (
+  <section className="resume-block">
+    <SectionTitle icon="heart" theme={theme} onDark={onDark}>
+      {title}
+    </SectionTitle>
+    <div className={`rs-body ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
+      {clean(items).join('、')}
+    </div>
+  </section>
+);
+
 const SummaryBlock: React.FC<{
   summary: string;
   theme: ThemeClasses;
@@ -447,6 +562,54 @@ const buildBlocks = (
             ),
           });
         break;
+      case 'certificates':
+        if (data.certificates && data.certificates.length > 0)
+          blocks.push({
+            key: 'certificates',
+            node: (
+              <CertificatesBlock
+                items={data.certificates}
+                theme={theme}
+                title={sec.title}
+              />
+            ),
+          });
+        break;
+      case 'languages':
+        if (data.languages && data.languages.length > 0)
+          blocks.push({
+            key: 'languages',
+            node: (
+              <LanguagesBlock
+                items={data.languages}
+                theme={theme}
+                title={sec.title}
+              />
+            ),
+          });
+        break;
+      case 'activities':
+        addListSection(
+          'act',
+          sec.icon,
+          sec.title,
+          data.activities,
+          ({ item }) => <ActivityEntry a={item} />,
+        );
+        break;
+      case 'interests':
+        if (clean(data.interests).length > 0)
+          blocks.push({
+            key: 'interests',
+            node: (
+              <InterestsBlock
+                items={data.interests || []}
+                theme={theme}
+                title={sec.title}
+              />
+            ),
+          });
+        break;
     }
   });
 
@@ -465,12 +628,16 @@ const SidebarLayout: React.FC<{
   const { basics } = data;
   const visible = sections.filter((s) => !s.hidden);
 
-  const asideKeys = visible.filter(
-    (s) => s.key === 'skills' || s.key === 'awards',
-  );
-  const mainKeys = visible.filter(
-    (s) => s.key !== 'skills' && s.key !== 'awards',
-  );
+  // 侧栏（紧凑列表型）：技能 / 荣誉 / 证书 / 语言 / 兴趣；其余进主栏
+  const ASIDE_KEYS = new Set([
+    'skills',
+    'awards',
+    'certificates',
+    'languages',
+    'interests',
+  ]);
+  const asideKeys = visible.filter((s) => ASIDE_KEYS.has(s.key));
+  const mainKeys = visible.filter((s) => !ASIDE_KEYS.has(s.key));
 
   const renderMain = (sec: ResolvedSection) => {
     switch (sec.key) {
@@ -522,6 +689,19 @@ const SidebarLayout: React.FC<{
             </div>
           </section>
         ) : null;
+      case 'activities':
+        return data.activities && data.activities.length > 0 ? (
+          <section key="activities">
+            <SectionTitle icon={sec.icon} theme={theme}>
+              {sec.title}
+            </SectionTitle>
+            <div className="space-y-3">
+              {data.activities.map((a, i) => (
+                <ActivityEntry key={i} a={a} />
+              ))}
+            </div>
+          </section>
+        ) : null;
       default:
         return null;
     }
@@ -549,27 +729,67 @@ const SidebarLayout: React.FC<{
           </SectionTitle>
           <ContactList basics={basics} onDark />
         </div>
-        {asideKeys.map((sec) =>
-          sec.key === 'skills' && data.skills && data.skills.length > 0 ? (
-            <div key="skills" className="mb-6">
-              <SkillsBlock
-                items={data.skills}
-                theme={theme}
-                title={sec.title}
-                onDark
-              />
-            </div>
-          ) : sec.key === 'awards' && data.awards && data.awards.length > 0 ? (
-            <div key="awards" className="mb-6">
-              <AwardsBlock
-                items={data.awards}
-                theme={theme}
-                title={sec.title}
-                onDark
-              />
-            </div>
-          ) : null,
-        )}
+        {asideKeys.map((sec) => {
+          switch (sec.key) {
+            case 'skills':
+              return data.skills && data.skills.length > 0 ? (
+                <div key="skills" className="mb-6">
+                  <SkillsBlock
+                    items={data.skills}
+                    theme={theme}
+                    title={sec.title}
+                    onDark
+                  />
+                </div>
+              ) : null;
+            case 'awards':
+              return data.awards && data.awards.length > 0 ? (
+                <div key="awards" className="mb-6">
+                  <AwardsBlock
+                    items={data.awards}
+                    theme={theme}
+                    title={sec.title}
+                    onDark
+                  />
+                </div>
+              ) : null;
+            case 'certificates':
+              return data.certificates && data.certificates.length > 0 ? (
+                <div key="certificates" className="mb-6">
+                  <CertificatesBlock
+                    items={data.certificates}
+                    theme={theme}
+                    title={sec.title}
+                    onDark
+                  />
+                </div>
+              ) : null;
+            case 'languages':
+              return data.languages && data.languages.length > 0 ? (
+                <div key="languages" className="mb-6">
+                  <LanguagesBlock
+                    items={data.languages}
+                    theme={theme}
+                    title={sec.title}
+                    onDark
+                  />
+                </div>
+              ) : null;
+            case 'interests':
+              return clean(data.interests).length > 0 ? (
+                <div key="interests" className="mb-6">
+                  <InterestsBlock
+                    items={data.interests || []}
+                    theme={theme}
+                    title={sec.title}
+                    onDark
+                  />
+                </div>
+              ) : null;
+            default:
+              return null;
+          }
+        })}
       </aside>
 
       <div className="px-8 py-8 space-y-6">
