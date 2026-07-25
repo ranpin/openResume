@@ -1,6 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ResumeDocument from './ResumeDocument';
+import {
+  EXAMPLE_ACTIVITY,
+  EXAMPLE_AWARD,
+  EXAMPLE_CERTIFICATE,
+  EXAMPLE_EDUCATION,
+  EXAMPLE_INTERESTS,
+  EXAMPLE_LANGUAGE,
+  EXAMPLE_PROJECT,
+  EXAMPLE_SKILL,
+  EXAMPLE_WORK,
+} from './resumeExamples';
 import type { ResumeData } from '../../types/resume';
 
 const base: ResumeData = {
@@ -241,5 +252,38 @@ describe('ResumeDocument', () => {
     // 精通=4 实心圆点，熟悉=2
     expect(cpp!.querySelectorAll('.bg-gray-700').length).toBe(4);
     expect(py!.querySelectorAll('.bg-gray-700').length).toBe(2);
+  });
+
+  it('renders the built-in example entries (示例) correctly', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          education: [EXAMPLE_EDUCATION],
+          work: [EXAMPLE_WORK],
+          projects: [EXAMPLE_PROJECT],
+          skills: [EXAMPLE_SKILL],
+          awards: [EXAMPLE_AWARD],
+          certificates: [EXAMPLE_CERTIFICATE],
+          languages: [EXAMPLE_LANGUAGE],
+          activities: [EXAMPLE_ACTIVITY],
+          interests: EXAMPLE_INTERESTS,
+        }}
+        id="resume-print"
+      />,
+    );
+    for (const s of [
+      '上海交通大学',
+      '字节跳动',
+      '智能简历解析引擎',
+      'TypeScript',
+      '国家奖学金',
+      '软件设计师（中级）',
+      'CET-6',
+      '校研究生会',
+      '开源贡献',
+    ]) {
+      expect(screen.getAllByText(new RegExp(s)).length).toBeGreaterThan(0);
+    }
   });
 });
