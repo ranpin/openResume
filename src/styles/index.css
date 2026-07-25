@@ -157,3 +157,19 @@
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* 编辑器日期选择弹层 */
+@keyframes rs-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.rs-pop {
+  animation: rs-pop 0.15s ease-out;
+}
