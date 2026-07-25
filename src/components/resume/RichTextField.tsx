@@ -12,6 +12,8 @@ interface RichTextFieldProps {
   value?: string;
   onChange: (v: string) => void;
   rows?: number;
+  /** 提供后在工具栏右侧显示「AI 润色」按钮（用于要点类字段） */
+  onPolish?: () => void;
 }
 
 const COLORS: { cls: string; hex: string; name: string }[] = [
@@ -55,6 +57,7 @@ const RichTextField: React.FC<RichTextFieldProps> = ({
   value = '',
   onChange,
   rows = 4,
+  onPolish,
 }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [sizeOpen, setSizeOpen] = useState(false);
@@ -240,6 +243,18 @@ const RichTextField: React.FC<RichTextFieldProps> = ({
             title="右对齐"
             onClick={() => spanClass('rt-right')}
           />
+          {onPolish && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onPolish}
+              title="用 AI 润色这些要点（BYOK）"
+              className="ml-auto inline-flex h-7 items-center gap-1 rounded bg-gradient-to-r from-purple-500 to-fuchsia-500 px-2 text-[11px] font-semibold text-white shadow-sm transition-all hover:from-purple-600 hover:to-fuchsia-600 hover:shadow"
+            >
+              <Icon name="sparkles" className="h-3 w-3" />
+              AI 润色
+            </button>
+          )}
         </div>
         <textarea
           ref={ref}

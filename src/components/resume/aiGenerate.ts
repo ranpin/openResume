@@ -38,14 +38,23 @@ async function fetchDocTitles(): Promise<string[]> {
   }
 }
 
-// 从模型回复里稳健地抠出 JSON（容忍代码块围栏 / 前后杂字）
+// 从模型回复里稳健地抠出 JSON（容忍代码块围栏 / 前后杂字），对象与数组都支持
 export function extractJson(text: string): unknown {
   let t = (text || '').trim();
   const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(t);
   if (fence) t = fence[1].trim();
-  if (!t.startsWith('{')) {
-    const s = t.indexOf('{');
-    const e = t.lastIndexOf('}');
+  if (!t.startsWith('{') && !t.startsWith('[')) {
+    const so = t.indexOf('{');
+    const sa = t.indexOf('[');
+    let s = -1;
+    let e = -1;
+    if (so >= 0 && (sa < 0 || so < sa)) {
+      s = so;
+      e = t.lastIndexOf('}');
+    } else if (sa >= 0) {
+      s = sa;
+      e = t.lastIndexOf(']');
+    }
     if (s >= 0 && e > s) t = t.slice(s, e + 1);
   }
   return JSON.parse(t);
@@ -70,6 +79,24 @@ ${docTitles.join('、') || '（无）'}
 
 请据此生成一份针对该 JD 优化后的 ResumeData JSON。`;
 
+  const text = await callAnthropic(apiKey, model, SYSTEM, user, 4096, signal);
+
+  const parsed = extractJson(text) as ResumeData;
+  if (!parsed || !parsed.basics || !parsed.basics.name) {
+    throw new Error('模型返回的内容不是有效的简历 JSON');
+  }
+  return parsed;
+}
+
+// 浏览器直连 Anthropic 的底层调用：返回模型文本。供生成 / 润色 / 翻译等复用。
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  maxTokens: number,
+  signal?: AbortSignal,
+): Promise<string> {
   const res = await fetch(API, {
     method: 'POST',
     signal,
@@ -81,8 +108,8 @@ ${docTitles.join('、') || '（无）'}
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
-      system: SYSTEM,
+      max_tokens: maxTokens,
+      system,
       messages: [{ role: 'user', content: user }],
     }),
   });
@@ -95,14 +122,52 @@ ${docTitles.join('、') || '（无）'}
   }
 
   const payload = await res.json();
-  const text: string = (payload.content || [])
+  return (payload.content || [])
     .filter((b: { type?: string }) => b.type === 'text')
     .map((b: { text?: string }) => b.text || '')
     .join('\n');
+}
 
-  const parsed = extractJson(text) as ResumeData;
-  if (!parsed || !parsed.basics || !parsed.basics.name) {
-    throw new Error('模型返回的内容不是有效的简历 JSON');
+const POLISH_SYSTEM = `你是资深简历顾问，擅长把简历要点润色得更专业、更有说服力。
+规则：
+- 逐条润色，保持条数与顺序完全不变；
+- 保留真实信息与数字，不要编造新的经历或数据；
+- 用动词开头，突出成果与影响，能量化就量化；
+- 每条简洁有力（一般 8-60 字），可用 **粗体** 强调关键成果/数字；
+- 语言与原要点保持一致（中文原句润色为中文）；
+- 只输出一个 JSON 对象 {"highlights":["...","..."]}，禁止输出解释或 markdown 代码块。`;
+
+export interface PolishOpts {
+  apiKey: string;
+  model: string;
+  highlights: string[];
+  signal?: AbortSignal;
+}
+
+// AI 润色要点：输入若干条要点，返回等长的润色后要点数组。
+export async function polishHighlights(opts: PolishOpts): Promise<string[]> {
+  const { apiKey, model, highlights, signal } = opts;
+  const cleaned = highlights.map((h) => h.trim()).filter((h) => h.length > 0);
+  if (cleaned.length === 0) return [];
+
+  const user = `请润色以下简历要点（JSON 数组）：
+${JSON.stringify(cleaned, null, 2)}
+
+输出 {"highlights":[...]}，条数与顺序与输入一致。`;
+
+  const text = await callAnthropic(apiKey, model, POLISH_SYSTEM, user, 2048, signal);
+  const parsed = extractJson(text) as { highlights?: unknown };
+  const arr = Array.isArray(parsed)
+    ? (parsed as unknown[])
+    : Array.isArray(parsed?.highlights)
+      ? (parsed.highlights as unknown[])
+      : null;
+  if (!arr) {
+    throw new Error('模型返回的内容不是有效的要点 JSON');
   }
-  return parsed;
+  const result = arr.map((x) => String(x).trim());
+  if (result.length !== cleaned.length) {
+    throw new Error(`润色结果条数（${result.length}）与原文（${cleaned.length}）不一致`);
+  }
+  return result;
 }
