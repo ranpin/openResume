@@ -3,6 +3,7 @@ import Icon from '../Icon';
 import ResumeDocument from './ResumeDocument';
 import RichTextField from './RichTextField';
 import PeriodField from './PeriodField';
+import TagField from './TagField';
 import {
   cloneResume,
   downloadResumeYaml,
@@ -77,7 +78,7 @@ const Field: React.FC<{
       value={value ?? ''}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
     />
   </label>
 );
@@ -183,8 +184,10 @@ const EntryCard: React.FC<{
   <div
     onDragEnter={onDragEnter}
     onDragOver={(e) => e.preventDefault()}
-    className={`rounded-xl border bg-gray-50/60 p-4 space-y-3 transition-shadow ${
-      dragging ? 'border-blue-400 shadow-md opacity-60' : 'border-gray-200'
+    className={`rounded-xl border bg-gray-50/60 p-4 space-y-3 transition-all ${
+      dragging
+        ? 'border-blue-400 shadow-md opacity-60'
+        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
     }`}
   >
     <div className="flex items-center justify-between">
@@ -247,8 +250,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
   const lines = (arr?: string[]) => (arr || []).join('\n');
   const toLines = (v: string) => v.split('\n');
-  const commas = (arr?: string[]) => (arr || []).join(', ');
-  const toCommas = (v: string) => v.split(',').map((s) => s.trim());
 
   // 显式「保存」：改动本就实时自动存本地草稿，这里给明确反馈；
   // 若内容与已发布版本一致，则清掉草稿（不再显示「未发布」）。
@@ -946,12 +947,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                             }
                           />
                         </div>
-                        <Field
+                        <TagField
                           label="技术栈"
-                          placeholder="逗号分隔，如 C++, Python"
-                          value={commas(sp.tech)}
+                          placeholder="如 C++, Python"
+                          items={sp.tech || []}
                           onChange={(v) =>
-                            updateSubProject(i, pi, (p) => (p.tech = toCommas(v)))
+                            updateSubProject(i, pi, (p) => (p.tech = v))
                           }
                         />
                         <RichTextField
@@ -1032,12 +1033,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       }
                     />
                   </div>
-                  <Field
+                  <TagField
                     label="技术栈"
-                    placeholder="逗号分隔，如 C++, Python"
-                    value={commas(p.tech)}
+                    placeholder="如 C++, Python"
+                    items={p.tech || []}
                     onChange={(v) =>
-                      update((d) => d.projects && (d.projects[i].tech = toCommas(v)))
+                      update((d) => d.projects && (d.projects[i].tech = v))
                     }
                   />
                   <RichTextField
@@ -1091,12 +1092,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       update((d) => d.skills && (d.skills[i].category = v))
                     }
                   />
-                  <Field
+                  <TagField
                     label="技能项"
-                    placeholder="逗号分隔，如 C++, Python"
-                    value={commas(s.items)}
+                    placeholder="如 C++, Python"
+                    items={s.items || []}
                     onChange={(v) =>
-                      update((d) => d.skills && (d.skills[i].items = toCommas(v)))
+                      update((d) => d.skills && (d.skills[i].items = v))
                     }
                   />
                 </EntryCard>
@@ -1147,8 +1148,9 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         update((d) => d.awards && (d.awards[i].issuer = v))
                       }
                     />
-                    <Field
+                    <PeriodField
                       label="日期"
+                      mode="single"
                       value={a.date}
                       onChange={(v) =>
                         update((d) => d.awards && (d.awards[i].date = v))
