@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { extractJson, polishHighlights, translateResume } from './aiGenerate';
+import { extractJson, polishHighlights, translateResume, parseResume } from './aiGenerate';
 import type { ResumeData } from '../../types/resume';
 
 afterEach(() => {
@@ -151,6 +151,46 @@ describe('translateResume', () => {
     );
     await expect(
       translateResume({ apiKey: 'bad', model: 'claude-sonnet-5', base: BASE_RESUME }),
+    ).rejects.toThrow('invalid x-api-key');
+  });
+});
+
+describe('parseResume', () => {
+  it('parses resume text into structured ResumeData', async () => {
+    const parsed: ResumeData = {
+      id: 'imported',
+      label: '李四·后端工程师',
+      basics: { name: '李四', title: '后端工程师', email: 'lisi@example.com' },
+      work: [{ company: '某厂', position: '后端', highlights: ['负责订单系统'] }],
+      skills: [{ category: '语言', items: ['Go', 'Python'] }],
+    };
+    mockFetchReturning(parsed);
+    const out = await parseResume({
+      apiKey: 'sk-test',
+      model: 'claude-sonnet-5',
+      text: '李四 后端工程师 lisi@example.com 工作经历：某厂 后端，负责订单系统…',
+    });
+    expect(out.basics.name).toBe('李四');
+    expect(out.basics.title).toBe('后端工程师');
+    expect(out.work?.[0].company).toBe('某厂');
+  });
+
+  it('throws when the parsed result has no name', async () => {
+    mockFetchReturning({ label: 'x', basics: { title: '工程师' } });
+    await expect(
+      parseResume({ apiKey: 'sk-test', model: 'claude-sonnet-5', text: '无姓名文本' }),
+    ).rejects.toThrow(/姓名/);
+  });
+
+  it('surfaces API errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: 'invalid x-api-key' } }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    await expect(
+      parseResume({ apiKey: 'bad', model: 'claude-sonnet-5', text: '张三' }),
     ).rejects.toThrow('invalid x-api-key');
   });
 });

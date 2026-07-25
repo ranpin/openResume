@@ -201,3 +201,34 @@ ${JSON.stringify(base)}`;
   }
   return parsed;
 }
+
+const PARSE_SYSTEM = `你是资深简历顾问，擅长把任意格式的简历文本解析成结构化数据。只输出一个 JSON 对象，符合下面的 TypeScript 类型，禁止输出任何解释或 markdown 代码块：
+type Project = {name:string;role?:string;period?:string;tech?:string[];highlights?:string[];link?:string};
+type ResumeData = { label:string; target?:string; template?:'classic'|'sidebar'|'compact'; theme?:'blue'|'emerald'|'violet'|'rose'|'slate'; sections?:{key:'summary'|'education'|'work'|'projects'|'skills'|'awards'|'certificates'|'languages'|'activities'|'interests'|'custom';title?:string;hidden?:boolean;customId?:string}[]; custom?:{id:string;title:string;content?:string}[]; basics:{name:string;title?:string;email?:string;phone?:string;location?:string;website?:string;github?:string;summary?:string}; education?:{school:string;college?:string;degree?:string;major?:string;period?:string;gpa?:string;courses?:string;detail?:string}[]; work?:{company:string;position?:string;period?:string;location?:string;highlights?:string[];projects?:Project[]}[]; projects?:Project[]; skills?:{category?:string;items:string[]}[]; awards?:{title:string;issuer?:string;date?:string}[]; certificates?:{name:string;issuer?:string;date?:string}[]; languages?:{name:string;level?:string}[]; activities?:{name:string;role?:string;period?:string;highlights?:string[]}[]; interests?:string[] };
+规则：
+- 从用户给的简历文本里如实抽取信息，不要编造原文没有的经历、数字或字段；原文没有的字段直接省略；
+- label 用「姓名+目标岗位」或姓名概括（如「张三·前端工程师」）；
+- 要点拆成 highlights 数组，每条简洁有力；能识别出的技术栈放进 tech / skills；
+- 保持候选人原语言（中文简历输出中文）；
+- 不要臆造 photo / avatar。`;
+
+export interface ParseOpts {
+  apiKey: string;
+  model: string;
+  text: string;
+  signal?: AbortSignal;
+}
+
+// AI 导入：把粘贴的简历纯文本解析成结构化 ResumeData。
+export async function parseResume(opts: ParseOpts): Promise<ResumeData> {
+  const { apiKey, model, text, signal } = opts;
+  const user = `请把下面这份简历文本解析成 ResumeData JSON：
+${text}`;
+
+  const out = await callAnthropic(apiKey, model, PARSE_SYSTEM, user, 4096, signal);
+  const parsed = extractJson(out) as ResumeData;
+  if (!parsed || !parsed.basics || !parsed.basics.name) {
+    throw new Error('未能从文本中解析出有效的简历（至少需要姓名）');
+  }
+  return parsed;
+}
