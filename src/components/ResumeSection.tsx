@@ -105,6 +105,13 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
 
   const handleExportPdf = () => window.print();
 
+  // 导出 Word：按需加载 docx 构建器（不进入 SSG 预渲染树）
+  const handleExportWord = async () => {
+    if (!current) return;
+    const { downloadResumeWord } = await import('./resume/exportWord');
+    await downloadResumeWord(current);
+  };
+
   return (
     <div>
       {/* 一级切换：我的简历 / 详细经历 */}
@@ -194,6 +201,11 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               icon="print"
               label="导出 PDF"
               onClick={handleExportPdf}
+            />
+            <ToolbarButton
+              icon="file-alt"
+              label="导出 Word"
+              onClick={handleExportWord}
             />
             <ToolbarButton
               icon="download"
