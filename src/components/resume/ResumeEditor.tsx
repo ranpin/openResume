@@ -28,7 +28,29 @@ import type {
 } from '../../types/resume';
 
 // 可拖拽排序的数组字段
-type ArrayKey = 'education' | 'work' | 'projects' | 'skills' | 'awards';
+type ArrayKey =
+  | 'education'
+  | 'work'
+  | 'projects'
+  | 'skills'
+  | 'awards'
+  | 'certificates'
+  | 'languages'
+  | 'activities';
+
+// 语言熟练度常用选项（可选，也可留空自填）
+const LANGUAGE_LEVELS = [
+  '母语',
+  '精通',
+  '流利',
+  '熟练',
+  '熟悉',
+  '了解',
+  'CET-6',
+  'CET-4',
+  '雅思 7+',
+  '托福 100+',
+];
 
 // 全局排版设置的默认值与范围（滑块）
 const SETTING_DEFAULTS = {
@@ -80,6 +102,30 @@ const Field: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
     />
+  </label>
+);
+
+const SelectField: React.FC<{
+  label: string;
+  value?: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+}> = ({ label, value, onChange, options, placeholder }) => (
+  <label className="block">
+    <span className="block text-xs font-medium text-gray-500 mb-1">{label}</span>
+    <select
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+    >
+      <option value="">{placeholder || '请选择'}</option>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
   </label>
 );
 
@@ -793,6 +839,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       }
                     />
                   </div>
+                  <Field
+                    label="主修课程"
+                    placeholder="如 高等数学、线性代数、数据结构（逗号分隔）"
+                    value={e.courses}
+                    onChange={(v) =>
+                      update((d) => d.education && (d.education[i].courses = v))
+                    }
+                  />
                   <RichTextField
                     label="补充说明"
                     value={e.detail}
@@ -1160,6 +1214,213 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 </EntryCard>
               ))}
             </div>
+          </section>
+
+          {/* 资格证书 */}
+          <section>
+            <SectionHeader
+              icon="certificate"
+              title={titleOf('certificates')}
+              onAdd={() =>
+                update((d) => {
+                  d.certificates ||= [];
+                  d.certificates.push({ name: '' });
+                })
+              }
+            />
+            <div className="space-y-3">
+              {(data.certificates || []).map((c, i) => (
+                <EntryCard
+                  key={i}
+                  label="证书"
+                  index={i}
+                  total={(data.certificates || []).length}
+                  {...dragProps('certificates', i)}
+                  onUp={() =>
+                    update(
+                      (d) => d.certificates && moveInArray(d.certificates, i, -1),
+                    )
+                  }
+                  onDown={() =>
+                    update(
+                      (d) => d.certificates && moveInArray(d.certificates, i, 1),
+                    )
+                  }
+                  onDelete={() => update((d) => d.certificates?.splice(i, 1))}
+                >
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <Field
+                      label="证书名称"
+                      value={c.name}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.certificates && (d.certificates[i].name = v),
+                        )
+                      }
+                    />
+                    <Field
+                      label="颁发方"
+                      value={c.issuer}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.certificates && (d.certificates[i].issuer = v),
+                        )
+                      }
+                    />
+                    <PeriodField
+                      label="取得时间"
+                      mode="single"
+                      value={c.date}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.certificates && (d.certificates[i].date = v),
+                        )
+                      }
+                    />
+                  </div>
+                </EntryCard>
+              ))}
+            </div>
+          </section>
+
+          {/* 语言能力 */}
+          <section>
+            <SectionHeader
+              icon="language"
+              title={titleOf('languages')}
+              onAdd={() =>
+                update((d) => {
+                  d.languages ||= [];
+                  d.languages.push({ name: '' });
+                })
+              }
+            />
+            <div className="space-y-3">
+              {(data.languages || []).map((l, i) => (
+                <EntryCard
+                  key={i}
+                  label="语言"
+                  index={i}
+                  total={(data.languages || []).length}
+                  {...dragProps('languages', i)}
+                  onUp={() =>
+                    update((d) => d.languages && moveInArray(d.languages, i, -1))
+                  }
+                  onDown={() =>
+                    update((d) => d.languages && moveInArray(d.languages, i, 1))
+                  }
+                  onDelete={() => update((d) => d.languages?.splice(i, 1))}
+                >
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field
+                      label="语言"
+                      placeholder="如 英语 / 日语"
+                      value={l.name}
+                      onChange={(v) =>
+                        update((d) => d.languages && (d.languages[i].name = v))
+                      }
+                    />
+                    <SelectField
+                      label="熟练度"
+                      value={l.level}
+                      options={LANGUAGE_LEVELS}
+                      placeholder="选择或留空"
+                      onChange={(v) =>
+                        update(
+                          (d) => d.languages && (d.languages[i].level = v),
+                        )
+                      }
+                    />
+                  </div>
+                </EntryCard>
+              ))}
+            </div>
+          </section>
+
+          {/* 校园活动 */}
+          <section>
+            <SectionHeader
+              icon="users"
+              title={titleOf('activities')}
+              onAdd={() =>
+                update((d) => {
+                  d.activities ||= [];
+                  d.activities.push({ name: '' });
+                })
+              }
+            />
+            <div className="space-y-3">
+              {(data.activities || []).map((a, i) => (
+                <EntryCard
+                  key={i}
+                  label="活动"
+                  index={i}
+                  total={(data.activities || []).length}
+                  {...dragProps('activities', i)}
+                  onUp={() =>
+                    update(
+                      (d) => d.activities && moveInArray(d.activities, i, -1),
+                    )
+                  }
+                  onDown={() =>
+                    update((d) => d.activities && moveInArray(d.activities, i, 1))
+                  }
+                  onDelete={() => update((d) => d.activities?.splice(i, 1))}
+                >
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <Field
+                      label="组织 / 活动名"
+                      value={a.name}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.activities && (d.activities[i].name = v),
+                        )
+                      }
+                    />
+                    <Field
+                      label="角色"
+                      value={a.role}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.activities && (d.activities[i].role = v),
+                        )
+                      }
+                    />
+                    <PeriodField
+                      label="时间"
+                      value={a.period}
+                      onChange={(v) =>
+                        update(
+                          (d) => d.activities && (d.activities[i].period = v),
+                        )
+                      }
+                    />
+                  </div>
+                  <RichTextField
+                    label="活动要点"
+                    value={lines(a.highlights)}
+                    rows={3}
+                    onChange={(v) =>
+                      update(
+                        (d) =>
+                          d.activities && (d.activities[i].highlights = toLines(v)),
+                      )
+                    }
+                  />
+                </EntryCard>
+              ))}
+            </div>
+          </section>
+
+          {/* 兴趣爱好 */}
+          <section>
+            <SectionHeader icon="heart" title={titleOf('interests')} />
+            <TagField
+              label="兴趣爱好"
+              placeholder="如 篮球、摄影、开源社区"
+              items={data.interests || []}
+              onChange={(v) => update((d) => (d.interests = v))}
+            />
           </section>
 
           <p className="text-xs text-gray-400 pt-2 leading-relaxed">

@@ -23,6 +23,7 @@ export interface ResumeEducation {
   major?: string;
   period?: string;
   gpa?: string;
+  courses?: string; // 主修课程，逗号分隔的一行
   detail?: string;
 }
 
@@ -56,6 +57,27 @@ export interface ResumeAward {
   date?: string;
 }
 
+// 证书：名称 + 颁发方 + 取得时间
+export interface ResumeCertificate {
+  name: string;
+  issuer?: string;
+  date?: string;
+}
+
+// 语言能力：语言名 + 熟练度（如 CET-6 / 流利 / 精通）
+export interface ResumeLanguage {
+  name: string;
+  level?: string;
+}
+
+// 校园活动 / 课外活动 / 学生工作：组织或活动名 + 角色 + 时间 + 要点
+export interface ResumeActivity {
+  name: string;
+  role?: string;
+  period?: string;
+  highlights?: string[];
+}
+
 // 模板（版式）与配色主题
 export type ResumeTemplate = 'classic' | 'sidebar' | 'compact';
 export type ResumeTheme = 'blue' | 'emerald' | 'violet' | 'rose' | 'slate';
@@ -76,7 +98,11 @@ export type ResumeSectionKey =
   | 'work'
   | 'projects'
   | 'skills'
-  | 'awards';
+  | 'awards'
+  | 'certificates'
+  | 'languages'
+  | 'activities'
+  | 'interests';
 
 // 单个模块的展示配置：自定义标题、是否隐藏。顺序由数组顺序决定。
 export interface ResumeSectionConfig {
@@ -101,4 +127,8 @@ export interface ResumeData {
   projects?: ResumeProject[];
   skills?: ResumeSkill[];
   awards?: ResumeAward[];
+  certificates?: ResumeCertificate[];
+  languages?: ResumeLanguage[];
+  activities?: ResumeActivity[];
+  interests?: string[];
 }
