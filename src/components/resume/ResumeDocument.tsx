@@ -490,6 +490,22 @@ const SummaryBlock: React.FC<{
   </section>
 );
 
+// 自定义模块：自由标题 + 富文本正文（渲染逻辑同个人简介）
+const CustomBlock: React.FC<{
+  content: string;
+  theme: ThemeClasses;
+  title: string;
+  icon: string;
+  onDark?: boolean;
+}> = ({ content, theme, title, icon, onDark }) => (
+  <section className="resume-block">
+    <SectionTitle icon={icon} theme={theme} onDark={onDark}>
+      {title}
+    </SectionTitle>
+    <RichText>{content}</RichText>
+  </section>
+);
+
 const SingleHeader: React.FC<{
   basics: ResumeBasics;
   theme: ThemeClasses;
@@ -652,6 +668,22 @@ const buildBlocks = (
             ),
           });
         break;
+      case 'custom': {
+        const c = (data.custom || []).find((x) => x.id === sec.customId);
+        if (c && c.content && c.content.trim())
+          blocks.push({
+            key: `custom-${sec.customId}`,
+            node: (
+              <CustomBlock
+                content={c.content}
+                theme={theme}
+                title={sec.title}
+                icon={sec.icon}
+              />
+            ),
+          });
+        break;
+      }
     }
   });
 
@@ -744,6 +776,18 @@ const SidebarLayout: React.FC<{
             </div>
           </section>
         ) : null;
+      case 'custom': {
+        const c = (data.custom || []).find((x) => x.id === sec.customId);
+        return c && c.content && c.content.trim() ? (
+          <CustomBlock
+            key={`custom-${sec.customId}`}
+            content={c.content}
+            theme={theme}
+            title={sec.title}
+            icon={sec.icon}
+          />
+        ) : null;
+      }
       default:
         return null;
     }
@@ -848,7 +892,7 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
 }) => {
   const theme = THEMES[data.theme || 'blue'];
   const template = data.template || 'classic';
-  const sections = resolveSections(data.sections);
+  const sections = resolveSections(data.sections, data.custom);
   const style = rootVars(data.settings);
   const pageMargin = data.settings?.pageMargin ?? 45;
   const dense = template === 'compact';

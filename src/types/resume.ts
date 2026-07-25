@@ -95,6 +95,7 @@ export interface ResumeSettings {
 }
 
 // 可编辑的模块（分区）种类。顺序、标题、显隐由 sections 配置驱动。
+// 'custom' 为用户自定义模块（自由标题 + 富文本正文），可有多份，用 customId 区分。
 export type ResumeSectionKey =
   | 'summary'
   | 'education'
@@ -105,13 +106,22 @@ export type ResumeSectionKey =
   | 'certificates'
   | 'languages'
   | 'activities'
-  | 'interests';
+  | 'interests'
+  | 'custom';
 
 // 单个模块的展示配置：自定义标题、是否隐藏。顺序由数组顺序决定。
 export interface ResumeSectionConfig {
   key: ResumeSectionKey;
   title?: string; // 自定义模块名，缺省用内置默认名
   hidden?: boolean; // 隐藏该模块（数据保留，不渲染）
+  customId?: string; // key === 'custom' 时指向 data.custom[].id
+}
+
+// 自定义模块：自由标题 + 富文本正文（Markdown，同个人简介）。id 稳定唯一。
+export interface ResumeCustomSection {
+  id: string;
+  title: string;
+  content?: string;
 }
 
 export interface ResumeData {
@@ -134,4 +144,5 @@ export interface ResumeData {
   languages?: ResumeLanguage[];
   activities?: ResumeActivity[];
   interests?: string[];
+  custom?: ResumeCustomSection[]; // 自定义模块（自由标题 + 富文本正文）
 }

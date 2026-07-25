@@ -254,6 +254,38 @@ describe('ResumeDocument', () => {
     expect(py!.querySelectorAll('.bg-gray-700').length).toBe(2);
   });
 
+  it('renders custom sections (自定义模块) with their own title and content', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          custom: [
+            { id: 'c1', title: '科研经历', content: '发表了一篇论文' },
+            { id: 'c2', title: '自我评价', content: '认真负责' },
+          ],
+        }}
+        id="resume-print"
+      />,
+    );
+    expect(screen.getAllByText('科研经历').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/发表了一篇论文/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('自我评价').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/认真负责/).length).toBeGreaterThan(0);
+  });
+
+  it('omits a custom section whose content is empty', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          custom: [{ id: 'c1', title: '空模块', content: '   ' }],
+        }}
+        id="resume-print"
+      />,
+    );
+    expect(screen.queryByText('空模块')).toBeNull();
+  });
+
   it('renders the built-in example entries (示例) correctly', () => {
     render(
       <ResumeDocument
