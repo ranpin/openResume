@@ -1,14 +1,15 @@
-// 简历诊断中心：顶部 tab 容器，聚合「完成度」与「智能检查」（后续可加「岗位匹配」等）。
+// 简历诊断中心：顶部 tab 容器，聚合「完成度」「智能检查」「竞争力」三个视角。
 // 智能检查 tab 上带问题数角标，有问题时更显眼。
 
 import React, { useMemo, useState } from 'react';
 import Icon from '../Icon';
 import CompletenessPanel from './CompletenessPanel';
 import ResumeCheckList from './ResumeCheckList';
+import CompetitivenessList from './CompetitivenessList';
 import { runChecks, issueCounts } from './resumeCheck';
 import type { ResumeData } from '../../types/resume';
 
-type TabId = 'complete' | 'check';
+type TabId = 'complete' | 'check' | 'competitiveness';
 
 const DiagnosticsPanel: React.FC<{
   data: ResumeData;
@@ -21,6 +22,7 @@ const DiagnosticsPanel: React.FC<{
   const tabs: { id: TabId; label: string; icon: string }[] = [
     { id: 'complete', label: '完成度', icon: 'chart-bar' },
     { id: 'check', label: '智能检查', icon: 'search' },
+    { id: 'competitiveness', label: '竞争力', icon: 'trophy' },
   ];
 
   return (
@@ -56,11 +58,9 @@ const DiagnosticsPanel: React.FC<{
         })}
       </div>
 
-      {tab === 'complete' ? (
-        <CompletenessPanel data={data} />
-      ) : (
-        <ResumeCheckList data={data} onFix={onFix} />
-      )}
+      {tab === 'complete' && <CompletenessPanel data={data} />}
+      {tab === 'check' && <ResumeCheckList data={data} onFix={onFix} />}
+      {tab === 'competitiveness' && <CompetitivenessList data={data} />}
     </section>
   );
 };
