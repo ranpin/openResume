@@ -49,6 +49,8 @@ export interface ResumeWork {
 export interface ResumeSkill {
   category?: string;
   items: string[];
+  // 可选：按技能名标注熟练度（了解/熟悉/掌握/精通），渲染为圆点；缺省则纯文本
+  levels?: Record<string, string>;
 }
 
 export interface ResumeAward {

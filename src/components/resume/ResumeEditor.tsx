@@ -52,6 +52,9 @@ const LANGUAGE_LEVELS = [
   '托福 100+',
 ];
 
+// 技能熟练度四级（与渲染端圆点一一对应：了解=1 … 精通=4）
+const SKILL_LEVELS = ['了解', '熟悉', '掌握', '精通'];
+
 // 全局排版设置的默认值与范围（滑块）
 const SETTING_DEFAULTS = {
   fontScale: 1,
@@ -1154,6 +1157,48 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       update((d) => d.skills && (d.skills[i].items = v))
                     }
                   />
+                  {(s.items || []).filter((t) => t && t.trim()).length > 0 && (
+                    <div>
+                      <span className="block text-xs font-medium text-gray-500 mb-1">
+                        熟练度（可选，渲染为圆点）
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {(s.items || [])
+                          .filter((t) => t && t.trim())
+                          .map((it) => (
+                            <label
+                              key={it}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:border-gray-300"
+                            >
+                              <span className="text-gray-700">{it}</span>
+                              <select
+                                value={s.levels?.[it] || ''}
+                                onChange={(e) => {
+                                  const lv = e.target.value;
+                                  update((d) => {
+                                    if (!d.skills) return;
+                                    const sk = d.skills[i];
+                                    sk.levels = { ...(sk.levels || {}) };
+                                    if (lv) sk.levels[it] = lv;
+                                    else delete sk.levels[it];
+                                    if (Object.keys(sk.levels).length === 0)
+                                      delete sk.levels;
+                                  });
+                                }}
+                                className="bg-transparent outline-none cursor-pointer text-gray-500"
+                              >
+                                <option value="">—</option>
+                                {SKILL_LEVELS.map((l) => (
+                                  <option key={l} value={l}>
+                                    {l}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </EntryCard>
               ))}
             </div>

@@ -258,6 +258,38 @@ const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
   </div>
 );
 
+const SKILL_LEVELS = ['了解', '熟悉', '掌握', '精通'];
+
+// 技能熟练度圆点：了解=1 … 精通=4；未知级别不渲染
+const LevelDots: React.FC<{ level: string; onDark?: boolean }> = ({
+  level,
+  onDark,
+}) => {
+  const n = SKILL_LEVELS.indexOf(level) + 1;
+  if (n <= 0) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 ml-1.5 align-middle"
+      title={level}
+    >
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={`resume-color-exact inline-block w-1.5 h-1.5 rounded-full ${
+            i < n
+              ? onDark
+                ? 'bg-white'
+                : 'bg-gray-700'
+              : onDark
+                ? 'bg-white/25'
+                : 'bg-gray-300'
+          }`}
+        />
+      ))}
+    </span>
+  );
+};
+
 const SkillsBlock: React.FC<{
   items: ResumeSkill[];
   theme: ThemeClasses;
@@ -283,7 +315,13 @@ const SkillsBlock: React.FC<{
               {s.category}：
             </span>
           )}
-          {clean(s.items).join('、')}
+          {clean(s.items).map((it, idx, arr) => (
+            <span key={it} className="inline-flex items-center">
+              {it}
+              {s.levels?.[it] && <LevelDots level={s.levels[it]} onDark={onDark} />}
+              {idx < arr.length - 1 && <span>、</span>}
+            </span>
+          ))}
         </div>
       ))}
     </div>
