@@ -37,6 +37,7 @@ const PublishDialog = lazy(() => import('./PublishDialog'));
 const AiPolishPanel = lazy(() => import('./AiPolishPanel'));
 import type {
   ResumeData,
+  ResumeCustomSection,
   ResumeProject,
   ResumeTemplate,
   ResumeTheme,
@@ -401,7 +402,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const removePhoto = () => update((d) => (d.basics.photo = undefined));
 
   // --- 模块管理（顺序 / 改名 / 显隐）---
-  const resolved: ResolvedSection[] = resolveSections(data.sections);
+  const resolved: ResolvedSection[] = resolveSections(data.sections, data.custom);
   const titleOf = (key: string) =>
     resolved.find((s) => s.key === key)?.title || '';
   // 任何模块编辑都先「物化」出完整有序配置，再改
@@ -415,11 +416,44 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     editSections((arr) => moveInArray(arr, i, dir));
   const moveSectionTo = (from: number, to: number) =>
     editSections((arr) => moveItem(arr, from, to));
-  const setSectionTitle = (i: number, v: string) =>
+  const setSectionTitle = (i: number, v: string) => {
+    // 自定义模块的标题存在 data.custom[].title（单一事实来源），其余存 sections 配置
+    const sec = resolved[i];
+    if (sec?.key === 'custom' && sec.customId) {
+      update((d) => {
+        const c = (d.custom || []).find((x) => x.id === sec.customId);
+        if (c) c.title = v;
+      });
+      return;
+    }
     editSections((arr) => (arr[i].title = v));
+  };
   const toggleSectionHidden = (i: number) =>
     editSections((arr) => (arr[i].hidden = !arr[i].hidden));
   const [secDrag, setSecDrag] = useState<number | null>(null);
+
+  // --- 自定义模块（自由标题 + 富文本正文）---
+  const addCustomSection = () =>
+    update((d) => {
+      const id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      (d.custom ||= []).push({ id, title: '自定义模块', content: '' });
+    });
+  const updateCustomSection = (
+    id: string,
+    fn: (c: ResumeCustomSection) => void,
+  ) =>
+    update((d) => {
+      const c = (d.custom || []).find((x) => x.id === id);
+      if (c) fn(c);
+    });
+  const removeCustomSection = (id: string) =>
+    update((d) => {
+      d.custom = (d.custom || []).filter((x) => x.id !== id);
+      if (d.sections)
+        d.sections = d.sections.filter(
+          (s) => !(s.key === 'custom' && s.customId === id),
+        );
+    });
 
   // --- 工作经历下的子项目 ---
   const addSubProject = (wi: number) =>
@@ -680,7 +714,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <div className="space-y-2">
               {resolved.map((sec, i) => (
                 <div
-                  key={sec.key}
+                  key={sec.customId ? `custom:${sec.customId}` : sec.key}
                   onDragEnter={() => {
                     if (secDrag === null || secDrag === i) return;
                     moveSectionTo(secDrag, i);
@@ -739,6 +773,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                     >
                       {sec.hidden ? '已隐藏' : '显示'}
                     </button>
+                    {sec.key === 'custom' && sec.customId && (
+                      <IconBtn
+                        icon="trash"
+                        onClick={() => removeCustomSection(sec.customId!)}
+                        title="删除该自定义模块"
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -1643,6 +1684,56 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
               items={data.interests || []}
               onChange={(v) => update((d) => (d.interests = v))}
             />
+          </section>
+
+          {/* 自定义模块：自由标题 + 富文本正文 */}
+          <section id="sec-custom">
+            <SectionHeader
+              icon="plus"
+              title="自定义模块"
+              onAdd={addCustomSection}
+            />
+            <p className="-mt-1 mb-3 text-[11px] text-gray-400">
+              需要「自我评价」「在校经历」「科研经历」等额外分区时，点「添加」新建一个自定义模块；
+              标题与顺序可在上方「模块管理」里调整。
+            </p>
+            {(data.custom || []).length === 0 ? (
+              <p className="text-xs text-gray-400">
+                暂无自定义模块，点右上角「添加」创建。
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {(data.custom || []).map((c) => (
+                  <div
+                    key={c.id}
+                    className="rounded-lg border border-gray-200 bg-white p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <Field
+                        label="模块标题"
+                        value={c.title}
+                        onChange={(v) =>
+                          updateCustomSection(c.id, (x) => (x.title = v))
+                        }
+                      />
+                      <IconBtn
+                        icon="trash"
+                        onClick={() => removeCustomSection(c.id)}
+                        title="删除该自定义模块"
+                      />
+                    </div>
+                    <RichTextField
+                      label="模块正文"
+                      value={c.content}
+                      rows={4}
+                      onChange={(v) =>
+                        updateCustomSection(c.id, (x) => (x.content = v))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <p className="text-xs text-gray-400 pt-2 leading-relaxed">
