@@ -4,7 +4,7 @@ import ResumeDocument from './ResumeDocument';
 import RichTextField from './RichTextField';
 import PeriodField from './PeriodField';
 import TagField from './TagField';
-import CompletenessPanel from './CompletenessPanel';
+import DiagnosticsPanel from './DiagnosticsPanel';
 import {
   cloneResume,
   downloadResumeYaml,
@@ -502,8 +502,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2">
         {/* 左：表单 */}
         <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
-          {/* 完成度诊断 */}
-          <CompletenessPanel data={data} />
+          {/* 简历诊断：完成度 + 智能检查 */}
+          <DiagnosticsPanel data={data} onFix={(fix) => update(fix)} />
 
           {/* 简历元信息 */}
           <section>

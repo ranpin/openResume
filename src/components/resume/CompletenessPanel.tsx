@@ -18,7 +18,7 @@ const CompletenessPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
   };
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 shadow-sm">
+    <div>
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
           <Icon name="chart-bar" className="text-blue-600" />
@@ -91,7 +91,7 @@ const CompletenessPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
           各项都填好了，去导出 / 发布吧！
         </p>
       )}
-    </section>
+    </div>
   );
 };
 
