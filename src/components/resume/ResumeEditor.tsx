@@ -17,6 +17,7 @@ import {
   sectionConfigFromData,
   type ResolvedSection,
 } from './resumeSections';
+import { FONT_OPTIONS, fontStack } from './resumeFonts';
 import { useResumeStore } from '../../store/useResumeStore';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
@@ -335,6 +336,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     update((d) => {
       d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), [k]: v };
     });
+  const setFontFamily = (v: string) =>
+    update((d) => {
+      d.settings = {
+        ...SETTING_DEFAULTS,
+        ...(d.settings || {}),
+        fontFamily: v === 'default' ? undefined : v,
+      };
+    });
   const resetSettings = () => update((d) => (d.settings = { ...SETTING_DEFAULTS }));
 
   // --- 证件照 ---
@@ -589,6 +598,32 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 display={(v) => `${v}px`}
                 onChange={(v) => setSetting('pageMargin', v)}
               />
+            </div>
+            <div className="mt-3">
+              <span className="block text-xs font-medium text-gray-500 mb-1">
+                正文字体
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {FONT_OPTIONS.map((f) => {
+                  const active = (settings.fontFamily || 'default') === f.key;
+                  const stack = fontStack(f.key);
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setFontFamily(f.key)}
+                      style={stack ? { fontFamily: stack } : undefined}
+                      className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                        active
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <p className="mt-2 text-[11px] text-gray-400">
               作用于整份简历（预览与导出 PDF 同步生效）。

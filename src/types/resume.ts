@@ -91,6 +91,7 @@ export interface ResumeSettings {
   lineHeight?: number; // 正文行距，默认 1.6，范围约 1.2–2
   blockGap?: number; // 各条目/分区之间的间距(px)，默认 16
   pageMargin?: number; // A4 页边距(px)，默认 45
+  fontFamily?: string; // 正文字体 key（见 resumeFonts.FONT_OPTIONS），缺省沿用站点默认
 }
 
 // 可编辑的模块（分区）种类。顺序、标题、显隐由 sections 配置驱动。
