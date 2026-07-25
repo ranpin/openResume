@@ -103,4 +103,19 @@ describe('PeriodField', () => {
     fireEvent.click(screen.getByText('2月'));
     expect(onChange).toHaveBeenCalledWith('2026.02');
   });
+
+  it('single mode picks one date (awards)', () => {
+    const onChange = vi.fn();
+    render(
+      <PeriodField
+        label="日期"
+        mode="single"
+        value="2026"
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByText('2026'));
+    fireEvent.click(screen.getByText('5月'));
+    expect(onChange).toHaveBeenCalledWith('2026.05');
+  });
 });

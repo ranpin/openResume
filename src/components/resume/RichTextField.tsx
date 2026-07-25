@@ -130,7 +130,7 @@ const RichTextField: React.FC<RichTextFieldProps> = ({
       <span className="block text-xs font-medium text-gray-500 mb-1">
         {label}
       </span>
-      <div className="rounded-lg border border-gray-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden">
+      <div className="rounded-lg border border-gray-200 transition-colors hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 focus-within:hover:border-blue-500 overflow-hidden">
         {/* 工具栏 */}
         <div className="flex flex-wrap items-center gap-0.5 bg-gray-50 border-b border-gray-200 px-1.5 py-1">
           <ToolBtn icon="bold" title="加粗" onClick={() => wrap('**')} />

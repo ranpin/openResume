@@ -198,16 +198,37 @@ const MonthPicker: React.FC<{
 
 /**
  * 时间段选择器：日历面板选择开始/结束年月 + 「至今」开关。
+ * mode="single" 时为单日期选择（如奖项日期）。
  * 对外仍是字符串（如 "2025.07 - 至今"），与简历数据格式一致。
  */
 const PeriodField: React.FC<{
   label: string;
   value?: string | number;
   onChange: (v: string) => void;
-}> = ({ label, value, onChange }) => {
+  mode?: 'range' | 'single';
+}> = ({ label, value, onChange, mode = 'range' }) => {
   const parts = parsePeriod(value);
   const [open, setOpen] = useState<'start' | 'end' | null>(null);
   const emit = (next: PeriodParts) => onChange(composePeriod(next));
+
+  if (mode === 'single') {
+    const ym = parseYM(String(value ?? '').trim());
+    return (
+      <div>
+        <span className="mb-1 block text-xs font-medium text-gray-500">
+          {label}
+        </span>
+        <MonthPicker
+          value={ym}
+          placeholder="选择日期"
+          align="left"
+          open={open === 'start'}
+          onOpenChange={(o) => setOpen(o ? 'start' : null)}
+          onSelect={(v) => onChange(v ? formatYM(v) : '')}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
