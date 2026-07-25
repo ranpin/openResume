@@ -12,6 +12,7 @@ import type { ResumeData } from '../types/resume';
 const ResumeEditor = lazy(() => import('./resume/ResumeEditor'));
 const AiGeneratePanel = lazy(() => import('./resume/AiGeneratePanel'));
 const AiTranslatePanel = lazy(() => import('./resume/AiTranslatePanel'));
+const AiImportPanel = lazy(() => import('./resume/AiImportPanel'));
 const PublishDialog = lazy(() => import('./resume/PublishDialog'));
 
 interface ResumeSectionProps {
@@ -52,6 +53,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const [editing, setEditing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [translateOpen, setTranslateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
 
   const drafts = useResumeStore((s) => s.drafts);
@@ -208,6 +210,11 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               label="翻译成英文"
               onClick={() => setTranslateOpen(true)}
             />
+            <ToolbarButton
+              icon="file-import"
+              label="导入简历"
+              onClick={() => setImportOpen(true)}
+            />
             {hydrated && hasDraft && selectedId && (
               <button
                 onClick={() => resetDraft(selectedId)}
@@ -268,6 +275,13 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             baseData={current}
             onClose={() => setTranslateOpen(false)}
           />
+        </Suspense>
+      )}
+
+      {/* AI 导入：粘贴任意简历文本 → 结构化新草稿 */}
+      {importOpen && (
+        <Suspense fallback={null}>
+          <AiImportPanel onClose={() => setImportOpen(false)} />
         </Suspense>
       )}
 
