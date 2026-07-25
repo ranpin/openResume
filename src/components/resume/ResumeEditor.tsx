@@ -4,6 +4,7 @@ import ResumeDocument from './ResumeDocument';
 import RichTextField from './RichTextField';
 import PeriodField from './PeriodField';
 import TagField from './TagField';
+import CompletenessPanel from './CompletenessPanel';
 import {
   cloneResume,
   downloadResumeYaml,
@@ -501,6 +502,9 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2">
         {/* 左：表单 */}
         <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
+          {/* 完成度诊断 */}
+          <CompletenessPanel data={data} />
+
           {/* 简历元信息 */}
           <section>
             <SectionHeader icon="file-alt" title="简历信息" />
@@ -731,7 +735,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 基本信息 */}
-          <section>
+          <section id="sec-basics">
             <SectionHeader icon="user" title="基本信息" />
             {/* 证件照 */}
             <div className="mb-4 flex items-center gap-4">
@@ -842,7 +846,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 教育经历 */}
-          <section>
+          <section id="sec-education">
             <SectionHeader
               icon="graduation-cap"
               title={titleOf('education')}
@@ -945,7 +949,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 工作经历 */}
-          <section>
+          <section id="sec-work">
             <SectionHeader
               icon="briefcase"
               title={titleOf('work')}
@@ -1120,7 +1124,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 项目经历 */}
-          <section>
+          <section id="sec-projects">
             <SectionHeader
               icon="code"
               title={titleOf('projects')}
@@ -1208,7 +1212,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 专业技能 */}
-          <section>
+          <section id="sec-skills">
             <SectionHeader
               icon="cogs"
               title={titleOf('skills')}
@@ -1304,7 +1308,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 荣誉奖项 */}
-          <section>
+          <section id="sec-awards">
             <SectionHeader
               icon="trophy"
               title={titleOf('awards')}
@@ -1367,7 +1371,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 资格证书 */}
-          <section>
+          <section id="sec-certificates">
             <SectionHeader
               icon="certificate"
               title={titleOf('certificates')}
@@ -1440,7 +1444,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 语言能力 */}
-          <section>
+          <section id="sec-languages">
             <SectionHeader
               icon="language"
               title={titleOf('languages')}
@@ -1500,7 +1504,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 校园活动 */}
-          <section>
+          <section id="sec-activities">
             <SectionHeader
               icon="users"
               title={titleOf('activities')}
@@ -1581,7 +1585,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           </section>
 
           {/* 兴趣爱好 */}
-          <section>
+          <section id="sec-interests">
             <SectionHeader
               icon="heart"
               title={titleOf('interests')}
