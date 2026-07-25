@@ -18,6 +18,18 @@ import {
   type ResolvedSection,
 } from './resumeSections';
 import { FONT_OPTIONS, fontStack } from './resumeFonts';
+import {
+  EXAMPLE_ACTIVITY,
+  EXAMPLE_AWARD,
+  EXAMPLE_CERTIFICATE,
+  EXAMPLE_EDUCATION,
+  EXAMPLE_INTERESTS,
+  EXAMPLE_LANGUAGE,
+  EXAMPLE_PROJECT,
+  EXAMPLE_SKILL,
+  EXAMPLE_SUMMARY,
+  EXAMPLE_WORK,
+} from './resumeExamples';
 import { useResumeStore } from '../../store/useResumeStore';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
@@ -187,22 +199,36 @@ const SectionHeader: React.FC<{
   icon: string;
   title: string;
   onAdd?: () => void;
-}> = ({ icon, title, onAdd }) => (
+  onExample?: () => void;
+}> = ({ icon, title, onAdd, onExample }) => (
   <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
     <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
       <Icon name={icon} className="text-blue-600" />
       {title}
     </h3>
-    {onAdd && (
-      <button
-        type="button"
-        onClick={onAdd}
-        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
-      >
-        <Icon name="plus" />
-        添加
-      </button>
-    )}
+    <div className="flex items-center gap-3">
+      {onExample && (
+        <button
+          type="button"
+          onClick={onExample}
+          title="插入一条范例，参照写法后替换为你的真实信息"
+          className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700"
+        >
+          <Icon name="lightbulb" />
+          示例
+        </button>
+      )}
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+        >
+          <Icon name="plus" />
+          添加
+        </button>
+      )}
+    </div>
   </div>
 );
 
@@ -792,6 +818,20 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
               />
             </div>
             <div className="mt-3">
+              {!data.basics.summary && (
+                <div className="flex justify-end mb-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update((d) => (d.basics.summary = EXAMPLE_SUMMARY))
+                    }
+                    className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700"
+                  >
+                    <Icon name="lightbulb" />
+                    填入示例
+                  </button>
+                </div>
+              )}
               <RichTextField
                 label="个人简介"
                 value={data.basics.summary}
@@ -806,6 +846,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="graduation-cap"
               title={titleOf('education')}
+              onExample={() =>
+                update((d) => {
+                  d.education ||= [];
+                  d.education.push(EXAMPLE_EDUCATION);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.education ||= [];
@@ -903,6 +949,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="briefcase"
               title={titleOf('work')}
+              onExample={() =>
+                update((d) => {
+                  d.work ||= [];
+                  d.work.push(EXAMPLE_WORK);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.work ||= [];
@@ -1072,6 +1124,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="code"
               title={titleOf('projects')}
+              onExample={() =>
+                update((d) => {
+                  d.projects ||= [];
+                  d.projects.push(EXAMPLE_PROJECT);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.projects ||= [];
@@ -1154,6 +1212,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="cogs"
               title={titleOf('skills')}
+              onExample={() =>
+                update((d) => {
+                  d.skills ||= [];
+                  d.skills.push(EXAMPLE_SKILL);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.skills ||= [];
@@ -1244,6 +1308,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="trophy"
               title={titleOf('awards')}
+              onExample={() =>
+                update((d) => {
+                  d.awards ||= [];
+                  d.awards.push(EXAMPLE_AWARD);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.awards ||= [];
@@ -1301,6 +1371,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="certificate"
               title={titleOf('certificates')}
+              onExample={() =>
+                update((d) => {
+                  d.certificates ||= [];
+                  d.certificates.push(EXAMPLE_CERTIFICATE);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.certificates ||= [];
@@ -1368,6 +1444,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="language"
               title={titleOf('languages')}
+              onExample={() =>
+                update((d) => {
+                  d.languages ||= [];
+                  d.languages.push(EXAMPLE_LANGUAGE);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.languages ||= [];
@@ -1422,6 +1504,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="users"
               title={titleOf('activities')}
+              onExample={() =>
+                update((d) => {
+                  d.activities ||= [];
+                  d.activities.push(EXAMPLE_ACTIVITY);
+                })
+              }
               onAdd={() =>
                 update((d) => {
                   d.activities ||= [];
@@ -1494,7 +1582,19 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
           {/* 兴趣爱好 */}
           <section>
-            <SectionHeader icon="heart" title={titleOf('interests')} />
+            <SectionHeader
+              icon="heart"
+              title={titleOf('interests')}
+              onExample={() =>
+                update((d) => {
+                  const cur = d.interests || [];
+                  d.interests = [
+                    ...cur,
+                    ...EXAMPLE_INTERESTS.filter((x) => !cur.includes(x)),
+                  ];
+                })
+              }
+            />
             <TagField
               label="兴趣爱好"
               placeholder="如 篮球、摄影、开源社区"
