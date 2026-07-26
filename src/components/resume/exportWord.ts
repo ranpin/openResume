@@ -251,7 +251,10 @@ const contactLine = (data: ResumeData, align: 'center' | 'left', ctx: Ctx): Para
   const items: string[] = [];
   if (b.email) items.push(b.email);
   if (b.phone) items.push(b.phone);
+  if (b.wechat) items.push(b.wechat);
   if (b.location) items.push(b.location);
+  if (b.birth) items.push(b.birth);
+  if (b.political) items.push(b.political);
   if (b.github) items.push(b.github.replace(/^https?:\/\//, ''));
   if (b.website) items.push(b.website.replace(/^https?:\/\//, ''));
   return new Paragraph({

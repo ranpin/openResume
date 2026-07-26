@@ -3,18 +3,17 @@ import Icon from './Icon';
 import ResumeCatalog from './ResumeCatalog';
 import ResumeDocument from './resume/ResumeDocument';
 import PreviewFit from './resume/PreviewFit';
-import { downloadResumeYaml, migrateResume, normalizeResume } from './resume/resumeIo';
+import { migrateResume, normalizeResume } from './resume/resumeIo';
 import { resumes } from '../data/content';
 import { useResumeStore } from '../store/useResumeStore';
 import type { Project, Publication, Internship } from '../types';
 import type { ResumeData } from '../types/resume';
 
-// 编辑器 / AI / 发布面板仅在打开时才需要，按需加载（并避免进入 SSG 预渲染树）
+// 编辑器 / AI 面板仅在打开时才需要，按需加载（并避免进入 SSG 预渲染树）
 const ResumeEditor = lazy(() => import('./resume/ResumeEditor'));
 const AiGeneratePanel = lazy(() => import('./resume/AiGeneratePanel'));
 const AiTranslatePanel = lazy(() => import('./resume/AiTranslatePanel'));
 const AiImportPanel = lazy(() => import('./resume/AiImportPanel'));
-const PublishDialog = lazy(() => import('./resume/PublishDialog'));
 
 interface ResumeSectionProps {
   resumeCategory: string;
@@ -55,7 +54,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const [aiOpen, setAiOpen] = useState(false);
   const [translateOpen, setTranslateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [publishOpen, setPublishOpen] = useState(false);
 
   const drafts = useResumeStore((s) => s.drafts);
   const publishedMap = useResumeStore((s) => s.published);
@@ -63,7 +61,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const activeId = useResumeStore((s) => s.activeId);
   const setActiveId = useResumeStore((s) => s.setActiveId);
   const setHydrated = useResumeStore((s) => s.setHydrated);
-  const resetDraft = useResumeStore((s) => s.resetDraft);
 
   // 水合后再从 localStorage 载入草稿，避免预渲染 / 水合不一致
   useEffect(() => {
@@ -104,19 +101,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
     return true;
   };
   const hasDraft = !!(selectedId && hydrated && isDirty(selectedId));
-
-  const handleExportData = () => {
-    if (current) downloadResumeYaml(current);
-  };
-
-  const handleExportPdf = () => window.print();
-
-  // 导出 Word：按需加载 docx 构建器（不进入 SSG 预渲染树）
-  const handleExportWord = async () => {
-    if (!current) return;
-    const { downloadResumeWord } = await import('./resume/exportWord');
-    await downloadResumeWord(current);
-  };
 
   return (
     <div>
@@ -190,33 +174,13 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             })}
           </div>
 
-          {/* 工具条 */}
+          {/* 工具条：文档级操作（发布 / 导出 / 重置）在编辑器工具栏内，这里只保留创建级入口 */}
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <ToolbarButton
               icon="edit"
               label="编辑"
               primary
               onClick={() => setEditing(true)}
-            />
-            <ToolbarButton
-              icon="paper-plane"
-              label="发布到线上"
-              onClick={() => setPublishOpen(true)}
-            />
-            <ToolbarButton
-              icon="print"
-              label="导出 PDF"
-              onClick={handleExportPdf}
-            />
-            <ToolbarButton
-              icon="file-alt"
-              label="导出 Word"
-              onClick={handleExportWord}
-            />
-            <ToolbarButton
-              icon="download"
-              label="导出数据"
-              onClick={handleExportData}
             />
             <ToolbarButton
               icon="sparkles"
@@ -233,15 +197,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               label="导入简历"
               onClick={() => setImportOpen(true)}
             />
-            {hydrated && hasDraft && selectedId && (
-              <button
-                onClick={() => resetDraft(selectedId)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
-              >
-                <Icon name="redo" />
-                重置为已发布版本
-              </button>
-            )}
           </div>
 
           {hasDraft && (
@@ -249,7 +204,8 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               <Icon name="exclamation-triangle" className="mt-0.5 shrink-0" />
               <span>
                 当前简历有<strong>本地修改</strong>（已自动保存在本浏览器）。点
-                <strong>「发布到线上」</strong>一键提交部署；或「导出数据」手动提交；或「重置为已发布版本」放弃本地修改。
+                <strong>「编辑」</strong>进入编辑器，可发布到线上、导出 PDF /
+                Word / 数据，或重置为已发布版本。
               </span>
             </div>
           )}
@@ -301,17 +257,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
       {importOpen && (
         <Suspense fallback={null}>
           <AiImportPanel onClose={() => setImportOpen(false)} />
-        </Suspense>
-      )}
-
-      {/* 一键发布到线上 */}
-      {publishOpen && current && selectedId && (
-        <Suspense fallback={null}>
-          <PublishDialog
-            resumeId={selectedId}
-            data={current}
-            onClose={() => setPublishOpen(false)}
-          />
         </Suspense>
       )}
     </div>
