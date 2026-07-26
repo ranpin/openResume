@@ -99,8 +99,11 @@ const ContactList: React.FC<{
       href: `mailto:${basics.email}`,
     });
   if (basics.phone) items.push({ icon: 'phone', text: basics.phone });
+  if (basics.wechat) items.push({ icon: 'comments', text: basics.wechat });
   if (basics.location)
     items.push({ icon: 'map-marker-alt', text: basics.location });
+  if (basics.birth) items.push({ icon: 'calendar-alt', text: basics.birth });
+  if (basics.political) items.push({ icon: 'flag', text: basics.political });
   if (basics.github)
     items.push({
       icon: 'github',
@@ -337,17 +340,29 @@ const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
   </div>
 );
 
+// 卡片风格模板：卡片只包裹模块内容，分区标题留在卡片外
+const CARD_CLASS =
+  'rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3';
+
+const CardBox: React.FC<{ card?: boolean; children: React.ReactNode }> = ({
+  card,
+  children,
+}) => (card ? <div className={CARD_CLASS}>{children}</div> : <>{children}</>);
+
 const SkillsBlock: React.FC<{
   skills: string;
   theme: ThemeClasses;
   title: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ skills, theme, title, onDark }) => (
+}> = ({ skills, theme, title, card, onDark }) => (
   <section className="resume-block">
     <SectionTitle icon="cogs" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <RichText className={onDark ? 'resume-rt-on-dark' : ''}>{skills}</RichText>
+    <CardBox card={card}>
+      <RichText className={onDark ? 'resume-rt-on-dark' : ''}>{skills}</RichText>
+    </CardBox>
   </section>
 );
 
@@ -355,38 +370,41 @@ const AwardsBlock: React.FC<{
   items: ResumeAward[];
   theme: ThemeClasses;
   title: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ items, theme, title, onDark }) => (
+}> = ({ items, theme, title, card, onDark }) => (
   <section>
     <SectionTitle icon="trophy" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <ul className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
-      {items.map((a, i) => (
-        <li
-          key={i}
-          className={`resume-block ${
-            onDark ? '' : 'flex items-baseline justify-between gap-3'
-          }`}
-        >
-          <span>
-            {a.title}
-            {a.issuer && (
-              <span className={onDark ? 'text-white/70' : 'text-gray-500'}>
-                {' '}
-                · {a.issuer}
-              </span>
-            )}
-          </span>
-          {a.date &&
-            (onDark ? (
-              <span className="rs-meta text-white/60"> （{a.date}）</span>
-            ) : (
-              <Period text={a.date} />
-            ))}
-        </li>
-      ))}
-    </ul>
+    <CardBox card={card}>
+      <ul className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
+        {items.map((a, i) => (
+          <li
+            key={i}
+            className={`resume-block ${
+              onDark ? '' : 'flex items-baseline justify-between gap-3'
+            }`}
+          >
+            <span>
+              {a.title}
+              {a.issuer && (
+                <span className={onDark ? 'text-white/70' : 'text-gray-500'}>
+                  {' '}
+                  · {a.issuer}
+                </span>
+              )}
+            </span>
+            {a.date &&
+              (onDark ? (
+                <span className="rs-meta text-white/60"> （{a.date}）</span>
+              ) : (
+                <Period text={a.date} />
+              ))}
+          </li>
+        ))}
+      </ul>
+    </CardBox>
   </section>
 );
 
@@ -394,40 +412,43 @@ const CertificatesBlock: React.FC<{
   items: ResumeCertificate[];
   theme: ThemeClasses;
   title: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ items, theme, title, onDark }) => (
+}> = ({ items, theme, title, card, onDark }) => (
   <section>
     <SectionTitle icon="certificate" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <ul
-      className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
-    >
-      {items.map((c, i) => (
-        <li
-          key={i}
-          className={`resume-block ${
-            onDark ? '' : 'flex items-baseline justify-between gap-3'
-          }`}
-        >
-          <span>
-            {c.name}
-            {c.issuer && (
-              <span className={onDark ? 'text-white/70' : 'text-gray-500'}>
-                {' '}
-                · {c.issuer}
-              </span>
-            )}
-          </span>
-          {c.date &&
-            (onDark ? (
-              <span className="rs-meta text-white/60"> （{c.date}）</span>
-            ) : (
-              <Period text={c.date} />
-            ))}
-        </li>
-      ))}
-    </ul>
+    <CardBox card={card}>
+      <ul
+        className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
+      >
+        {items.map((c, i) => (
+          <li
+            key={i}
+            className={`resume-block ${
+              onDark ? '' : 'flex items-baseline justify-between gap-3'
+            }`}
+          >
+            <span>
+              {c.name}
+              {c.issuer && (
+                <span className={onDark ? 'text-white/70' : 'text-gray-500'}>
+                  {' '}
+                  · {c.issuer}
+                </span>
+              )}
+            </span>
+            {c.date &&
+              (onDark ? (
+                <span className="rs-meta text-white/60"> （{c.date}）</span>
+              ) : (
+                <Period text={c.date} />
+              ))}
+          </li>
+        ))}
+      </ul>
+    </CardBox>
   </section>
 );
 
@@ -435,33 +456,36 @@ const LanguagesBlock: React.FC<{
   items: ResumeLanguage[];
   theme: ThemeClasses;
   title: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ items, theme, title, onDark }) => (
+}> = ({ items, theme, title, card, onDark }) => (
   <section>
     <SectionTitle icon="language" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <ul
-      className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
-    >
-      {items.map((l, i) => (
-        <li
-          key={i}
-          className={`resume-block ${
-            onDark ? '' : 'flex items-baseline justify-between gap-3'
-          }`}
-        >
-          <span>{l.name}</span>
-          {l.level && (
-            <span
-              className={onDark ? 'rs-meta text-white/70' : 'rs-meta text-gray-500'}
-            >
-              {l.level}
-            </span>
-          )}
-        </li>
-      ))}
-    </ul>
+    <CardBox card={card}>
+      <ul
+        className={`rs-body space-y-1 ${onDark ? 'text-white/90' : 'text-gray-700'}`}
+      >
+        {items.map((l, i) => (
+          <li
+            key={i}
+            className={`resume-block ${
+              onDark ? '' : 'flex items-baseline justify-between gap-3'
+            }`}
+          >
+            <span>{l.name}</span>
+            {l.level && (
+              <span
+                className={onDark ? 'rs-meta text-white/70' : 'rs-meta text-gray-500'}
+              >
+                {l.level}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </CardBox>
   </section>
 );
 
@@ -476,15 +500,18 @@ const InterestsBlock: React.FC<{
   items: string[];
   theme: ThemeClasses;
   title: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ items, theme, title, onDark }) => (
+}> = ({ items, theme, title, card, onDark }) => (
   <section className="resume-block">
     <SectionTitle icon="heart" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <div className={`rs-body ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
-      {clean(items).join('、')}
-    </div>
+    <CardBox card={card}>
+      <div className={`rs-body ${onDark ? 'text-white/90' : 'text-gray-700'}`}>
+        {clean(items).join('、')}
+      </div>
+    </CardBox>
   </section>
 );
 
@@ -492,12 +519,15 @@ const SummaryBlock: React.FC<{
   summary: string;
   theme: ThemeClasses;
   title: string;
-}> = ({ summary, theme, title }) => (
+  card?: boolean;
+}> = ({ summary, theme, title, card }) => (
   <section className="resume-block">
     <SectionTitle icon="user" theme={theme}>
       {title}
     </SectionTitle>
-    <RichText>{summary}</RichText>
+    <CardBox card={card}>
+      <RichText>{summary}</RichText>
+    </CardBox>
   </section>
 );
 
@@ -507,13 +537,16 @@ const CustomBlock: React.FC<{
   theme: ThemeClasses;
   title: string;
   icon: string;
+  card?: boolean;
   onDark?: boolean;
-}> = ({ content, theme, title, icon, onDark }) => (
+}> = ({ content, theme, title, icon, card, onDark }) => (
   <section className="resume-block">
     <SectionTitle icon={icon} theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <RichText>{content}</RichText>
+    <CardBox card={card}>
+      <RichText>{content}</RichText>
+    </CardBox>
   </section>
 );
 
@@ -550,6 +583,7 @@ const buildBlocks = (
   data: ResumeData,
   theme: ThemeClasses,
   sections: ResolvedSection[],
+  card = false,
 ): Block[] => {
   const blocks: Block[] = [];
   blocks.push({
@@ -573,12 +607,27 @@ const buildBlocks = (
           <SectionTitle icon={icon} theme={theme}>
             {title}
           </SectionTitle>
-          <Entry item={items[0]} />
+          {card ? (
+            <div className={CARD_CLASS}>
+              <Entry item={items[0]} />
+            </div>
+          ) : (
+            <Entry item={items[0]} />
+          )}
         </section>
       ),
     });
     for (let i = 1; i < items.length; i++) {
-      blocks.push({ key: `${k}-${i}`, node: <Entry item={items[i]} /> });
+      blocks.push({
+        key: `${k}-${i}`,
+        node: card ? (
+          <div className={CARD_CLASS}>
+            <Entry item={items[i]} />
+          </div>
+        ) : (
+          <Entry item={items[i]} />
+        ),
+      });
     }
   };
 
@@ -594,6 +643,7 @@ const buildBlocks = (
                 summary={data.basics.summary}
                 theme={theme}
                 title={sec.title}
+                card={card}
               />
             ),
           });
@@ -618,7 +668,12 @@ const buildBlocks = (
           blocks.push({
             key: 'skills',
             node: (
-              <SkillsBlock skills={data.skills} theme={theme} title={sec.title} />
+              <SkillsBlock
+                skills={data.skills}
+                theme={theme}
+                title={sec.title}
+                card={card}
+              />
             ),
           });
         break;
@@ -627,7 +682,12 @@ const buildBlocks = (
           blocks.push({
             key: 'awards',
             node: (
-              <AwardsBlock items={data.awards} theme={theme} title={sec.title} />
+              <AwardsBlock
+                items={data.awards}
+                theme={theme}
+                title={sec.title}
+                card={card}
+              />
             ),
           });
         break;
@@ -640,6 +700,7 @@ const buildBlocks = (
                 items={data.certificates}
                 theme={theme}
                 title={sec.title}
+                card={card}
               />
             ),
           });
@@ -653,6 +714,7 @@ const buildBlocks = (
                 items={data.languages}
                 theme={theme}
                 title={sec.title}
+                card={card}
               />
             ),
           });
@@ -675,6 +737,7 @@ const buildBlocks = (
                 items={data.interests || []}
                 theme={theme}
                 title={sec.title}
+                card={card}
               />
             ),
           });
@@ -690,6 +753,7 @@ const buildBlocks = (
                 theme={theme}
                 title={sec.title}
                 icon={sec.icon}
+                card={card}
               />
             ),
           });
@@ -698,31 +762,6 @@ const buildBlocks = (
     }
   });
 
-  return blocks;
-};
-
-// --- 卡片风格模板：页面整体扁平（白底、头部与经典版一致），仅各模块内容包一层圆角卡片 ---
-const buildCardBlocks = (
-  data: ResumeData,
-  theme: ThemeClasses,
-  sections: ResolvedSection[],
-): Block[] => {
-  const inner = buildBlocks(data, theme, sections);
-  const blocks: Block[] = [];
-  for (const b of inner) {
-    if (b.key === 'header') {
-      blocks.push(b);
-      continue;
-    }
-    blocks.push({
-      key: b.key,
-      node: (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
-          {b.node}
-        </div>
-      ),
-    });
-  }
   return blocks;
 };
 
@@ -955,9 +994,7 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
     );
   }
 
-  const blocks = isCard
-    ? buildCardBlocks(data, theme, sections)
-    : buildBlocks(data, theme, sections);
+  const blocks = buildBlocks(data, theme, sections, isCard);
   const signature = JSON.stringify(data);
 
   return (

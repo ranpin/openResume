@@ -8,7 +8,10 @@ export interface ResumeBasics {
   title?: string; // 求职意向 / 头衔
   email?: string;
   phone?: string;
+  wechat?: string; // 微信
   location?: string;
+  birth?: string; // 出生年月
+  political?: string; // 政治面貌
   website?: string;
   github?: string;
   summary?: string; // 个人简介 / 自我评价

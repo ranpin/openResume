@@ -149,7 +149,13 @@ describe('ResumeDocument', () => {
     // 头部沿用经典单栏样式（不再是主题色块头部）
     expect(container.querySelectorAll('header.bg-blue-800')).toHaveLength(0);
     // 其余各模块内容包一层白色圆角卡片
-    expect(container.querySelectorAll('.rounded-xl.border.bg-white').length).toBeGreaterThan(0);
+    const cards = root.querySelectorAll('.rounded-xl.border.bg-white');
+    expect(cards.length).toBeGreaterThan(0);
+    // 板块标题（如「工作经历」）留在卡片外，卡片只包内容
+    const titles = root.querySelectorAll('h2.rs-h2');
+    expect(titles.length).toBeGreaterThan(0);
+    titles.forEach((t) => expect(t.closest('.rounded-xl')).toBeNull());
+    cards.forEach((c) => expect(c.querySelector('h2.rs-h2')).toBeNull());
   });
 
   it('reports page count via onPages (智能一页)', () => {

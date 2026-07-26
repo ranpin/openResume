@@ -41,6 +41,7 @@ import type {
   ResumeData,
   ResumeCustomSection,
   ResumeProject,
+  ResumeSettings,
   ResumeTemplate,
   ResumeTheme,
   ResumeFieldSeparator,
@@ -525,13 +526,26 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   pageCountRef.current = pageCount;
   const [autoFit, setAutoFit] = useState<{ steps: number } | null>(null);
   const [fitMsg, setFitMsg] = useState<string | null>(null);
+  // 开关状态：压缩完成后点亮，再次点击恢复压缩前的排版
+  const [fitApplied, setFitApplied] = useState(false);
+  const preFitSettingsRef = useRef<ResumeSettings | null>(null);
   const handlePages = useCallback((n: number) => setPageCount(n), []);
 
-  const startSmartFit = () => {
+  const toggleSmartFit = () => {
+    if (autoFit) return;
+    if (fitApplied) {
+      const snap = preFitSettingsRef.current;
+      preFitSettingsRef.current = null;
+      setFitApplied(false);
+      if (snap) update((d) => (d.settings = snap));
+      setFitMsg('已恢复压缩前的排版');
+      return;
+    }
     if (pageCountRef.current <= 1) {
       setFitMsg('当前已是一页，无需压缩');
       return;
     }
+    preFitSettingsRef.current = { ...SETTING_DEFAULTS, ...(data.settings || {}) };
     setFitMsg(null);
     setAutoFit({ steps: 0 });
   };
@@ -547,11 +561,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       s.pageMargin <= FIT_MIN.pageMargin;
     if (count <= 1) {
       setAutoFit(null);
+      setFitApplied(true);
       setFitMsg('已压缩到一页 ✓');
       return;
     }
     if (atMin || autoFit.steps >= 14) {
       setAutoFit(null);
+      setFitApplied(true);
       setFitMsg(`已尽量压缩，仍需 ${count} 页`);
       return;
     }
@@ -994,10 +1010,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
             <button
               type="button"
-              onClick={startSmartFit}
+              onClick={toggleSmartFit}
               disabled={!!autoFit}
-              title="自动压缩排版直到塞进一页"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={fitApplied ? '恢复压缩前的排版' : '自动压缩排版直到塞进一页'}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                fitApplied
+                  ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               <Icon name="magic" />
               <span className="hidden lg:inline">
@@ -1229,9 +1249,24 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 onChange={(v) => update((d) => (d.basics.phone = v))}
               />
               <Field
+                label="微信"
+                value={data.basics.wechat}
+                onChange={(v) => update((d) => (d.basics.wechat = v))}
+              />
+              <Field
                 label="所在地"
                 value={data.basics.location}
                 onChange={(v) => update((d) => (d.basics.location = v))}
+              />
+              <Field
+                label="出生年月"
+                value={data.basics.birth}
+                onChange={(v) => update((d) => (d.basics.birth = v))}
+              />
+              <Field
+                label="政治面貌"
+                value={data.basics.political}
+                onChange={(v) => update((d) => (d.basics.political = v))}
               />
               <Field
                 label="GitHub"
