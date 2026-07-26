@@ -18,7 +18,7 @@ export interface ResumeBasics {
 
 export interface ResumeEducation {
   school: string;
-  college?: string; // 学院，标题行居中展示
+  college?: string; // 学院，条目标题行的次级字段（排版见 settings.headerLines / fieldSeparator）
   degree?: string;
   major?: string;
   period?: string;
@@ -81,8 +81,13 @@ export interface ResumeActivity {
 }
 
 // 模板（版式）与配色主题
-export type ResumeTemplate = 'classic' | 'sidebar' | 'compact';
+export type ResumeTemplate = 'classic' | 'sidebar' | 'compact' | 'card';
 export type ResumeTheme = 'blue' | 'emerald' | 'violet' | 'rose' | 'slate';
+
+// 条目标题行的字段排列方式：
+// - justify：分散对齐（无分隔符），首字段贴左、时间贴右、中间字段均分间距（两端对齐）
+// - dot / slash / bar：用 · / / / | 连接成一组
+export type ResumeFieldSeparator = 'justify' | 'dot' | 'slash' | 'bar';
 
 // 全局排版设置：作用于整份简历（字号、行距、块间距、页边距）。
 // 通过 CSS 变量下发到简历根节点，缺省时用文档默认值。
@@ -92,6 +97,8 @@ export interface ResumeSettings {
   blockGap?: number; // 各条目/分区之间的间距(px)，默认 16
   pageMargin?: number; // A4 页边距(px)，默认 45
   fontFamily?: string; // 正文字体 key（见 resumeFonts.FONT_OPTIONS），缺省沿用站点默认
+  headerLines?: 1 | 2; // 条目标题行数：1=单行（字段同行），2=双行（主标题+时间一行、其余字段次行）；默认 2
+  fieldSeparator?: ResumeFieldSeparator; // 标题行字段排列，默认 dot（·）
 }
 
 // 可编辑的模块（分区）种类。顺序、标题、显隐由 sections 配置驱动。

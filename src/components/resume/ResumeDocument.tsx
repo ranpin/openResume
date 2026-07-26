@@ -17,6 +17,7 @@ import type {
   ResumeLanguage,
   ResumeActivity,
   ResumeSettings,
+  ResumeFieldSeparator,
 } from '../../types/resume';
 
 /**
@@ -32,6 +33,7 @@ interface ResumeDocumentProps {
   data: ResumeData;
   id?: string;
   className?: string;
+  onPages?: (count: number) => void; // 屏幕分页页数变化回调（智能一页用；sidebar 恒为 1 页不触发）
 }
 
 const clean = (arr?: string[]) => (arr || []).filter((s) => s && s.trim());
@@ -47,6 +49,23 @@ const rootVars = (s?: ResumeSettings): React.CSSProperties =>
       ? { fontFamily: fontStack(s?.fontFamily) }
       : {}),
   }) as React.CSSProperties;
+
+// 条目标题排版（单/双行 + 字段排列）：由 ResumeDocument 从 data.settings 解析后经 Context 下发，
+// 供教育/工作/项目/活动等条目共用的 EntryHeader 读取（单栏与双栏模板一致生效）。
+interface EntryLayout {
+  headerLines: 1 | 2;
+  separator: ResumeFieldSeparator;
+}
+const DEFAULT_ENTRY_LAYOUT: EntryLayout = { headerLines: 2, separator: 'dot' };
+const EntryLayoutContext = React.createContext<EntryLayout>(DEFAULT_ENTRY_LAYOUT);
+
+// 字段排列方式 → 连接符（justify 为分散对齐，无连接符）
+const SEP_CHAR: Record<ResumeFieldSeparator, string> = {
+  justify: '',
+  dot: ' · ',
+  slash: ' / ',
+  bar: ' | ',
+};
 
 const SectionTitle: React.FC<{
   icon: string;
@@ -72,7 +91,8 @@ const ContactList: React.FC<{
   basics: ResumeBasics;
   onDark?: boolean;
   align?: 'center' | 'left';
-}> = ({ basics, onDark, align = 'center' }) => {
+  horizontal?: boolean; // 深色底色下也横排（卡片模板头部用）
+}> = ({ basics, onDark, align = 'center', horizontal }) => {
   const items: { icon: string; text: string; href?: string }[] = [];
   if (basics.email)
     items.push({
@@ -100,7 +120,11 @@ const ContactList: React.FC<{
     <div
       className={
         onDark
-          ? 'rs-meta flex flex-col gap-1.5 text-white/90'
+          ? horizontal
+            ? `rs-meta flex flex-wrap items-center gap-x-4 gap-y-1 text-white/90 ${
+                align === 'left' ? 'justify-start' : 'justify-center'
+              }`
+            : 'rs-meta flex flex-col gap-1.5 text-white/90'
           : `rs-body flex flex-wrap items-center gap-x-5 gap-y-1 ${
               align === 'left' ? 'justify-start' : 'justify-center'
             }`
@@ -166,25 +190,96 @@ const Period: React.FC<{ text?: string }> = ({ text }) =>
     <span className="rs-meta font-mono text-gray-500 shrink-0">{text}</span>
   ) : null;
 
+/**
+ * 条目标题行（教育/工作/项目/活动共用）。排版由 EntryLayoutContext 决定：
+ * - 双行(2)：第一行 主标题(左,粗) + 时间(右)，两端对齐；第二行 其余字段（按分隔符连接或分散）。
+ * - 单行(1)：所有字段同行。justify=分散对齐（首字段贴左、时间贴右、中间均分）；
+ *   其余=用分隔符连成左组 + 时间右对齐。
+ * 「多个信息怎么在一行分散开并保持两端对齐」即靠 flex 的 justify-between 实现。
+ */
+const EntryHeader: React.FC<{
+  primary: string;
+  secondary?: string;
+  meta?: (string | undefined)[];
+  period?: string;
+}> = ({ primary, secondary, meta, period }) => {
+  const { headerLines, separator } = React.useContext(EntryLayoutContext);
+  const fields = [secondary, ...(meta || [])].filter(
+    (s): s is string => !!s && !!s.trim(),
+  );
+  const sep = SEP_CHAR[separator];
+  const periodNode = period ? (
+    <div className="text-right whitespace-nowrap">
+      <Period text={period} />
+    </div>
+  ) : null;
+
+  if (headerLines === 1) {
+    if (separator === 'justify') {
+      // 分散对齐：主标题、各字段、时间作为 flex 子项，justify-between 两端对齐
+      return (
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{primary}</h3>
+          {fields.map((f, i) => (
+            <span
+              key={i}
+              className="rs-h3 font-normal text-gray-600 whitespace-nowrap"
+            >
+              {f}
+            </span>
+          ))}
+          {periodNode}
+        </div>
+      );
+    }
+    // 分隔符连成左组 + 时间右对齐
+    return (
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">
+          {primary}
+          {fields.length > 0 && (
+            <span className="font-normal text-gray-600">
+              {sep}
+              {fields.join(sep)}
+            </span>
+          )}
+        </h3>
+        {periodNode}
+      </div>
+    );
+  }
+
+  // 双行：主标题 + 时间一行；其余字段次行
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{primary}</h3>
+        {periodNode}
+      </div>
+      {fields.length > 0 &&
+        (separator === 'justify' ? (
+          <div className="rs-body flex flex-wrap items-baseline gap-x-4 text-gray-600">
+            {fields.map((f, i) => (
+              <span key={i}>{f}</span>
+            ))}
+          </div>
+        ) : (
+          <div className="rs-body text-gray-600">{fields.join(sep)}</div>
+        ))}
+    </>
+  );
+};
+
 // --- 单条目渲染（分页与侧栏共用）---
 
 const EduEntry: React.FC<{ e: ResumeEducation }> = ({ e }) => (
   <div className="resume-block">
-    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{e.school}</h3>
-      <span className="rs-h3 font-normal text-gray-600 text-center">
-        {e.college}
-      </span>
-      <div className="text-right whitespace-nowrap">
-        <Period text={e.period} />
-      </div>
-    </div>
-    {(e.degree || e.major || e.gpa) && (
-      <div className="rs-body text-gray-600">
-        {[e.degree, e.major].filter(Boolean).join(' · ')}
-        {e.gpa && <span> · GPA {e.gpa}</span>}
-      </div>
-    )}
+    <EntryHeader
+      primary={e.school}
+      secondary={e.college}
+      meta={[e.degree, e.major, e.gpa ? `GPA ${e.gpa}` : undefined]}
+      period={e.period}
+    />
     {e.courses && (
       <div className="rs-body text-gray-600">
         <span className="text-gray-500">主修课程：</span>
@@ -207,15 +302,7 @@ const ProjEntry: React.FC<{ p: ResumeProject; nested?: boolean }> = ({
         : 'resume-block'
     }
   >
-    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{p.name}</h3>
-      <span className="rs-h3 font-normal text-gray-600 text-center">
-        {p.role}
-      </span>
-      <div className="text-right whitespace-nowrap">
-        <Period text={p.period} />
-      </div>
-    </div>
+    <EntryHeader primary={p.name} secondary={p.role} period={p.period} />
     {clean(p.tech).length > 0 && (
       <div className="rs-meta text-gray-500 mt-0.5">
         {clean(p.tech).join(' / ')}
@@ -238,18 +325,12 @@ const ProjEntry: React.FC<{ p: ResumeProject; nested?: boolean }> = ({
 
 const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
   <div className="resume-block">
-    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">
-        {w.company}
-      </h3>
-      <span className="rs-h3 font-normal text-gray-600 text-center">
-        {w.position}
-      </span>
-      <div className="text-right whitespace-nowrap">
-        <Period text={w.period} />
-      </div>
-    </div>
-    {w.location && <div className="rs-meta text-gray-500">{w.location}</div>}
+    <EntryHeader
+      primary={w.company}
+      secondary={w.position}
+      meta={[w.location]}
+      period={w.period}
+    />
     <Highlights items={w.highlights} />
     {/* 同一公司下的多个子项目 */}
     {w.projects && w.projects.length > 0 && (
@@ -448,15 +529,7 @@ const LanguagesBlock: React.FC<{
 
 const ActivityEntry: React.FC<{ a: ResumeActivity }> = ({ a }) => (
   <div className="resume-block">
-    <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
-      <h3 className="rs-h3 font-semibold text-gray-900 min-w-0">{a.name}</h3>
-      <span className="rs-h3 font-normal text-gray-600 text-center">
-        {a.role}
-      </span>
-      <div className="text-right whitespace-nowrap">
-        <Period text={a.period} />
-      </div>
-    </div>
+    <EntryHeader primary={a.name} secondary={a.role} period={a.period} />
     <Highlights items={a.highlights} />
   </div>
 );
@@ -529,6 +602,32 @@ const SingleHeader: React.FC<{
         </div>
       </div>
       {hasPhoto && <PhotoBox src={basics.photo} />}
+    </header>
+  );
+};
+
+// 卡片模板头部：主题色圆角卡片，白字，联系方式横排
+const CardHeader: React.FC<{
+  basics: ResumeBasics;
+  theme: ThemeClasses;
+}> = ({ basics, theme }) => {
+  const hasPhoto = !!basics.photo;
+  return (
+    <header
+      className={`resume-color-exact resume-block rounded-xl px-6 py-5 text-white ${
+        theme.sidebarBg
+      } ${hasPhoto ? 'flex items-center gap-5' : ''}`}
+    >
+      <div className={hasPhoto ? 'flex-1 min-w-0' : ''}>
+        <h1 className="rs-name font-bold">{basics.name}</h1>
+        {basics.title && (
+          <p className="rs-title mt-1 text-white/85">{basics.title}</p>
+        )}
+        <div className="mt-3">
+          <ContactList basics={basics} onDark horizontal align="left" />
+        </div>
+      </div>
+      {hasPhoto && <PhotoBox src={basics.photo} onDark />}
     </header>
   );
 };
@@ -687,6 +786,33 @@ const buildBlocks = (
     }
   });
 
+  return blocks;
+};
+
+// --- 卡片风格模板：灰底页面 + 主题色头部卡片 + 各内容块白色圆角卡片 ---
+// 复用 buildBlocks 的内容块：替换头部为彩色卡片，其余每块包一层白色卡片。
+const CARD_SHEET_BG = 'bg-slate-100';
+
+const buildCardBlocks = (
+  data: ResumeData,
+  theme: ThemeClasses,
+  sections: ResolvedSection[],
+): Block[] => {
+  const inner = buildBlocks(data, theme, sections);
+  const blocks: Block[] = [
+    { key: 'header', node: <CardHeader basics={data.basics} theme={theme} /> },
+  ];
+  for (const b of inner) {
+    if (b.key === 'header') continue;
+    blocks.push({
+      key: b.key,
+      node: (
+        <div className="resume-color-exact bg-white rounded-xl border border-slate-200/80 shadow-sm px-4 py-3">
+          {b.node}
+        </div>
+      ),
+    });
+  }
   return blocks;
 };
 
@@ -889,6 +1015,7 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
   data,
   id,
   className = '',
+  onPages,
 }) => {
   const theme = THEMES[data.theme || 'blue'];
   const template = data.template || 'classic';
@@ -896,48 +1023,67 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
   const style = rootVars(data.settings);
   const pageMargin = data.settings?.pageMargin ?? 45;
   const dense = template === 'compact';
+  const isCard = template === 'card';
+
+  // 条目标题排版（单/双行 + 字段排列），经 Context 下发给各条目（单栏/卡片/双栏一致生效）
+  const entryLayout: EntryLayout = {
+    headerLines: data.settings?.headerLines ?? DEFAULT_ENTRY_LAYOUT.headerLines,
+    separator: data.settings?.fieldSeparator ?? DEFAULT_ENTRY_LAYOUT.separator,
+  };
 
   if (template === 'sidebar') {
     return (
-      <div
-        id={id}
-        style={style}
-        className={`resume-root resume-page bg-white text-gray-800 mx-auto w-full max-w-[820px] ${className}`}
-      >
-        <SidebarLayout data={data} theme={theme} sections={sections} />
-      </div>
+      <EntryLayoutContext.Provider value={entryLayout}>
+        <div
+          id={id}
+          style={style}
+          className={`resume-root resume-page bg-white text-gray-800 mx-auto w-full max-w-[820px] ${className}`}
+        >
+          <SidebarLayout data={data} theme={theme} sections={sections} />
+        </div>
+      </EntryLayoutContext.Provider>
     );
   }
 
-  const blocks = buildBlocks(data, theme, sections);
+  const blocks = isCard
+    ? buildCardBlocks(data, theme, sections)
+    : buildBlocks(data, theme, sections);
   const signature = JSON.stringify(data);
+  // 卡片模板灰底页面：屏幕 sheet 与打印连续文档同灰底，并强制打印背景色
+  const sheetBg = isCard ? CARD_SHEET_BG : 'bg-white';
 
   return (
-    <div className={className}>
-      {/* 打印用：连续文档（屏幕隐藏），承载 id 作为打印目标 */}
-      <div
-        id={id}
-        style={{ ...style, padding: pageMargin }}
-        className={`resume-root${
-          dense ? ' dense' : ''
-        } resume-print-only bg-white text-gray-800 mx-auto w-full max-w-[820px]`}
-      >
-        {blocks.map((b) => (
-          <div key={b.key} className="rt-pageblock">
-            {b.node}
-          </div>
-        ))}
-      </div>
+    <EntryLayoutContext.Provider value={entryLayout}>
+      <div className={className}>
+        {/* 打印用：连续文档（屏幕隐藏），承载 id 作为打印目标 */}
+        <div
+          id={id}
+          style={{ ...style, padding: pageMargin }}
+          className={`resume-root${
+            dense ? ' dense' : ''
+          } resume-print-only ${sheetBg} text-gray-800 mx-auto w-full max-w-[820px]${
+            isCard ? ' resume-color-exact' : ''
+          }`}
+        >
+          {blocks.map((b) => (
+            <div key={b.key} className="rt-pageblock">
+              {b.node}
+            </div>
+          ))}
+        </div>
 
-      {/* 屏幕用：真·多页 A4 */}
-      <Paginator
-        blocks={blocks}
-        signature={signature}
-        pad={pageMargin}
-        rootStyle={style}
-        dense={dense}
-      />
-    </div>
+        {/* 屏幕用：真·多页 A4 */}
+        <Paginator
+          blocks={blocks}
+          signature={signature}
+          pad={pageMargin}
+          rootStyle={style}
+          dense={dense}
+          sheetBg={sheetBg}
+          onPages={onPages}
+        />
+      </div>
+    </EntryLayoutContext.Provider>
   );
 };
 

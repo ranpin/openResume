@@ -21,6 +21,8 @@ interface PaginatorProps {
   pad?: number; // A4 页边距(px)，随全局排版设置变化
   rootStyle?: React.CSSProperties; // 排版 CSS 变量，下发到测量层与页面（须一致以保证测高准确）
   dense?: boolean; // compact 模板
+  sheetBg?: string; // 页面底色类名，默认 bg-white；卡片模板用灰底
+  onPages?: (count: number) => void; // 分页页数变化回调（智能一页用）
 }
 
 const Paginator: React.FC<PaginatorProps> = ({
@@ -29,12 +31,19 @@ const Paginator: React.FC<PaginatorProps> = ({
   pad = DEFAULT_PAD,
   rootStyle,
   dense,
+  sheetBg = 'bg-white',
+  onPages,
 }) => {
   const CONTENT_W = PAGE_W - pad * 2;
   const BUDGET = PAGE_H - pad * 2;
   const measureRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<number[][]>([blocks.map((_, i) => i)]);
   const [bump, setBump] = useState(0);
+  // 用 ref 持有最新 onPages 与上次上报页数：避免把 onPages 放进 effect 依赖导致频繁重排，
+  // 同时保证回调不为陈旧闭包，且页数未变时不重复上报。
+  const onPagesRef = useRef(onPages);
+  onPagesRef.current = onPages;
+  const lastCountRef = useRef(0);
 
   // 字体加载完成 / 窗口尺寸变化后重新测量
   useEffect(() => {
@@ -68,6 +77,12 @@ const Paginator: React.FC<PaginatorProps> = ({
     }
     if (cur.length) result.push(cur);
     setPages(result.length ? result : [[]]);
+    // 上报页数（仅在变化时），供编辑器「智能一页」判断是否溢出
+    const count = result.length || 1;
+    if (onPagesRef.current && lastCountRef.current !== count) {
+      lastCountRef.current = count;
+      onPagesRef.current(count);
+    }
     // 仅在指纹/尺寸变化时重排；blocks 每次渲染都是新数组，故不入依赖
   }, [signature, bump]);
 
@@ -94,7 +109,7 @@ const Paginator: React.FC<PaginatorProps> = ({
       {pages.map((idxs, p) => (
         <div
           key={p}
-          className="resume-sheet bg-white shadow-lg relative shrink-0"
+          className={`resume-sheet ${sheetBg} shadow-lg relative shrink-0`}
           style={{ width: PAGE_W, minHeight: PAGE_H, padding: pad }}
         >
           {idxs.map((i) => {

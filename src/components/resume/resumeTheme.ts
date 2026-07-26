@@ -52,6 +52,7 @@ export const THEME_OPTIONS: { id: ResumeTheme; label: string; dot: string }[] = 
 
 export const TEMPLATE_OPTIONS: { id: ResumeTemplate; label: string }[] = [
   { id: 'classic', label: '经典单栏' },
-  { id: 'sidebar', label: '双栏侧边' },
   { id: 'compact', label: '紧凑单栏' },
+  { id: 'card', label: '卡片风格' },
+  { id: 'sidebar', label: '双栏侧边' },
 ];

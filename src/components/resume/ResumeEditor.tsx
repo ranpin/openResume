@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import Icon from '../Icon';
 import ResumeDocument from './ResumeDocument';
 import RichTextField from './RichTextField';
@@ -41,6 +41,7 @@ import type {
   ResumeProject,
   ResumeTemplate,
   ResumeTheme,
+  ResumeFieldSeparator,
 } from '../../types/resume';
 
 // 可拖拽排序的数组字段
@@ -78,6 +79,21 @@ const SETTING_DEFAULTS = {
   blockGap: 16,
   pageMargin: 45,
 };
+
+// 条目标题排版选项（文本格式：单/双行 + 字段排列）
+const HEADER_LINES_OPTIONS: { id: 1 | 2; label: string }[] = [
+  { id: 2, label: '双行' },
+  { id: 1, label: '单行' },
+];
+const FIELD_SEPARATOR_OPTIONS: { id: ResumeFieldSeparator; label: string }[] = [
+  { id: 'justify', label: '分散对齐' },
+  { id: 'dot', label: '·' },
+  { id: 'slash', label: '/' },
+  { id: 'bar', label: '|' },
+];
+
+// 「智能一页」压缩下限（与对应滑块的最小值一致）
+const FIT_MIN = { fontScale: 0.8, lineHeight: 1.2, blockGap: 6, pageMargin: 24 };
 
 const moveItem = (arr: unknown[], from: number, to: number): void => {
   if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length)
@@ -384,6 +400,80 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       };
     });
   const resetSettings = () => update((d) => (d.settings = { ...SETTING_DEFAULTS }));
+  const setHeaderLines = (v: 1 | 2) =>
+    update((d) => {
+      d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), headerLines: v };
+    });
+  const setFieldSeparator = (v: ResumeFieldSeparator) =>
+    update((d) => {
+      d.settings = {
+        ...SETTING_DEFAULTS,
+        ...(d.settings || {}),
+        fieldSeparator: v,
+      };
+    });
+
+  // --- 智能一页：按屏幕分页页数，逐步压缩排版设置直到一页或到达下限 ---
+  const [pageCount, setPageCount] = useState(1);
+  const pageCountRef = useRef(pageCount);
+  pageCountRef.current = pageCount;
+  const [autoFit, setAutoFit] = useState<{ steps: number } | null>(null);
+  const [fitMsg, setFitMsg] = useState<string | null>(null);
+  const handlePages = useCallback((n: number) => setPageCount(n), []);
+
+  const startSmartFit = () => {
+    if (pageCountRef.current <= 1) {
+      setFitMsg('当前已是一页，无需压缩');
+      return;
+    }
+    setFitMsg(null);
+    setAutoFit({ steps: 0 });
+  };
+
+  useEffect(() => {
+    if (!autoFit) return;
+    const count = pageCountRef.current;
+    const s = { ...SETTING_DEFAULTS, ...(data.settings || {}) };
+    const atMin =
+      s.fontScale <= FIT_MIN.fontScale + 1e-3 &&
+      s.lineHeight <= FIT_MIN.lineHeight + 1e-3 &&
+      s.blockGap <= FIT_MIN.blockGap &&
+      s.pageMargin <= FIT_MIN.pageMargin;
+    if (count <= 1) {
+      setAutoFit(null);
+      setFitMsg('已压缩到一页 ✓');
+      return;
+    }
+    if (atMin || autoFit.steps >= 14) {
+      setAutoFit(null);
+      setFitMsg(`已尽量压缩，仍需 ${count} 页`);
+      return;
+    }
+    // 压缩一步：各维度按比例下调（clamp 到下限），等分页测量稳定后再评估下一步
+    update((d) => {
+      const cur = { ...SETTING_DEFAULTS, ...(d.settings || {}) };
+      d.settings = {
+        ...cur,
+        fontScale: Math.max(FIT_MIN.fontScale, +(cur.fontScale * 0.94).toFixed(3)),
+        lineHeight: Math.max(FIT_MIN.lineHeight, +(cur.lineHeight * 0.96).toFixed(3)),
+        blockGap: Math.max(FIT_MIN.blockGap, Math.round(cur.blockGap * 0.9)),
+        pageMargin: Math.max(FIT_MIN.pageMargin, Math.round(cur.pageMargin * 0.92)),
+      };
+    });
+    const t = setTimeout(
+      () => setAutoFit((a) => (a ? { steps: a.steps + 1 } : a)),
+      220,
+    );
+    return () => clearTimeout(t);
+    // 仅随 autoFit 推进；pageCount 经 ref、data 经 update 函数式更新读取，均为最新
+  }, [autoFit]);
+
+  // 反馈消息数秒后自动消失
+  useEffect(() => {
+    if (!fitMsg) return;
+    const t = setTimeout(() => setFitMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [fitMsg]);
 
   // --- 证件照 ---
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -701,6 +791,80 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                   );
                 })}
               </div>
+            </div>
+            <div className="mt-3">
+              <span className="block text-xs font-medium text-gray-500 mb-1">
+                标题行数
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {HEADER_LINES_OPTIONS.map((o) => {
+                  const active = (data.settings?.headerLines ?? 2) === o.id;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setHeaderLines(o.id)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                        active
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="block text-xs font-medium text-gray-500 mb-1">
+                字段样式
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {FIELD_SEPARATOR_OPTIONS.map((o) => {
+                  const active =
+                    (data.settings?.fieldSeparator ?? 'dot') === o.id;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      title={
+                        o.id === 'justify'
+                          ? '字段分散对齐：首字段贴左、时间贴右、中间均分（两端对齐）'
+                          : `用「${o.label}」分隔字段`
+                      }
+                      onClick={() => setFieldSeparator(o.id)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                        active
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1 text-[11px] text-gray-400">
+                控制学校/学院/专业/学位等字段在标题行的排布。「分散对齐」无分隔符、两端对齐；其余用对应符号连接。
+              </p>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button
+                type="button"
+                onClick={startSmartFit}
+                disabled={!!autoFit}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Icon name="magic" />
+                {autoFit ? '压缩中…' : '智能一页'}
+              </button>
+              <span className="text-xs text-gray-500">共 {pageCount} 页</span>
+              {fitMsg && (
+                <span className="text-xs font-medium text-emerald-600">
+                  {fitMsg}
+                </span>
+              )}
             </div>
             <p className="mt-2 text-[11px] text-gray-400">
               作用于整份简历（预览与导出 PDF 同步生效）。
@@ -1749,7 +1913,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
         {/* 右：实时预览（真·多页）*/}
         <div className="overflow-auto bg-gray-100 p-4 sm:p-8">
-          <ResumeDocument data={data} />
+          <ResumeDocument data={data} onPages={handlePages} />
         </div>
       </div>
 
