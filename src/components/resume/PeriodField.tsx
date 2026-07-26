@@ -106,8 +106,8 @@ const MonthPicker: React.FC<{
         onClick={() => onOpenChange(!open)}
         className={`flex w-full items-center justify-between gap-1 rounded-lg border bg-white px-3 py-2 text-sm outline-none transition-colors ${
           open
-            ? 'border-blue-500 ring-1 ring-blue-500'
-            : 'border-gray-200 hover:border-blue-400'
+            ? 'border-sage-500 ring-1 ring-sage-500'
+            : 'border-gray-200 hover:border-sage-400'
         }`}
       >
         <span className={`truncate ${value ? 'text-gray-800' : 'text-gray-400'}`}>
@@ -159,10 +159,10 @@ const MonthPicker: React.FC<{
                     title={selected ? '再次点击可仅保留年份' : undefined}
                     className={`rounded-md py-1.5 text-xs transition-colors ${
                       selected
-                        ? 'bg-blue-600 font-semibold text-white shadow-sm'
+                        ? 'bg-sage-600 font-semibold text-white shadow-sm'
                         : current
-                          ? 'font-semibold text-blue-600 hover:bg-blue-50'
-                          : 'text-gray-700 hover:bg-blue-50'
+                          ? 'font-semibold text-sage-600 hover:bg-sage-50'
+                          : 'text-gray-700 hover:bg-sage-50'
                     }`}
                   >
                     {m}月
@@ -174,7 +174,7 @@ const MonthPicker: React.FC<{
               <button
                 type="button"
                 onClick={() => setViewYear(thisYear)}
-                className="text-xs text-gray-500 transition-colors hover:text-blue-600"
+                className="text-xs text-gray-500 transition-colors hover:text-sage-600"
               >
                 今年
               </button>
@@ -246,7 +246,7 @@ const PeriodField: React.FC<{
         />
         <span className="shrink-0 text-sm text-gray-400">–</span>
         {parts.toPresent ? (
-          <span className="min-w-0 flex-1 truncate rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-center text-sm text-blue-700">
+          <span className="min-w-0 flex-1 truncate rounded-lg border border-sage-200 bg-sage-50 px-3 py-2 text-center text-sm text-sage-700">
             至今
           </span>
         ) : (
@@ -270,7 +270,7 @@ const PeriodField: React.FC<{
                 end: e.target.checked ? null : parts.end,
               })
             }
-            className="h-3.5 w-3.5 cursor-pointer accent-blue-600"
+            className="h-3.5 w-3.5 cursor-pointer accent-sage-600"
           />
           至今
         </label>

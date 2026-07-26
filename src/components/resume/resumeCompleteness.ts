@@ -149,7 +149,7 @@ export function scoreTone(score: number): {
   if (score >= 85)
     return { bar: 'bg-emerald-500', text: 'text-emerald-600', label: '很完整' };
   if (score >= 60)
-    return { bar: 'bg-blue-500', text: 'text-blue-600', label: '还不错' };
+    return { bar: 'bg-sage-500', text: 'text-sage-600', label: '还不错' };
   if (score >= 40)
     return { bar: 'bg-amber-500', text: 'text-amber-600', label: '待完善' };
   return { bar: 'bg-rose-500', text: 'text-rose-600', label: '刚起步' };

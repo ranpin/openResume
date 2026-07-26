@@ -10,7 +10,7 @@ const scoreTone = (score: number) =>
   score >= 70
     ? { text: 'text-emerald-600', bar: 'bg-emerald-500', label: '匹配度高' }
     : score >= 40
-      ? { text: 'text-blue-600', bar: 'bg-blue-500', label: '还有空间' }
+      ? { text: 'text-sage-600', bar: 'bg-sage-500', label: '还有空间' }
       : { text: 'text-amber-600', bar: 'bg-amber-400', label: '匹配度低' };
 
 const JdMatchPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
@@ -44,7 +44,7 @@ const JdMatchPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
           onChange={(e) => setJd(e.target.value)}
           placeholder="把招聘启事里的「岗位要求 / 职位描述」整段粘贴进来……"
           rows={4}
-          className="w-full resize-y rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-relaxed text-gray-700 placeholder:text-gray-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className="w-full resize-y rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-relaxed text-gray-700 placeholder:text-gray-300 focus:border-sage-400 focus:outline-none focus:ring-2 focus:ring-sage-100"
         />
       </div>
 

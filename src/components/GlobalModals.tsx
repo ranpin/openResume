@@ -94,7 +94,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
               </div>
               <div className="mb-12">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center">
-                  <Icon name="file-alt" className="text-blue-500 mr-3" />
+                  <Icon name="file-alt" className="text-sage-500 mr-3" />
                   论文摘要
                 </h3>
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -133,7 +133,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
                 </h3>
                 <p className="text-gray-500">{selectedInternship.duration}</p>
               </div>
-              <div className="prose prose-blue max-w-none">
+              <div className="prose prose-sage max-w-none">
                 <p className="whitespace-pre-wrap">
                   {selectedInternship.description}
                 </p>

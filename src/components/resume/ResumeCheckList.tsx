@@ -11,7 +11,7 @@ const SEV_META: Record<
 > = {
   error: { icon: 'exclamation-triangle', cls: 'text-rose-600', dot: 'bg-rose-500', label: '需处理' },
   warn: { icon: 'exclamation-triangle', cls: 'text-amber-600', dot: 'bg-amber-400', label: '建议改' },
-  info: { icon: 'lightbulb', cls: 'text-blue-500', dot: 'bg-blue-400', label: '可优化' },
+  info: { icon: 'lightbulb', cls: 'text-sage-500', dot: 'bg-sage-400', label: '可优化' },
 };
 
 const goTo = (sectionKey?: string) => {
@@ -56,8 +56,8 @@ const ResumeCheckList: React.FC<{
           </span>
         )}
         {counts.info > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-sage-50 px-2 py-0.5 font-medium text-sage-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-sage-400" />
             可优化 {counts.info}
           </span>
         )}
@@ -96,7 +96,7 @@ const ResumeCheckList: React.FC<{
                       type="button"
                       onClick={() => goTo(it.sectionKey)}
                       title="定位到该分区"
-                      className="rounded-md px-1.5 py-1 text-gray-300 transition-colors hover:bg-blue-50 hover:text-blue-500"
+                      className="rounded-md px-1.5 py-1 text-gray-300 transition-colors hover:bg-sage-50 hover:text-sage-500"
                     >
                       <Icon name="chevron-right" />
                     </button>

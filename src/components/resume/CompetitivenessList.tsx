@@ -8,7 +8,7 @@ const band = (score: number) =>
   score >= 80
     ? { bar: 'bg-emerald-500', text: 'text-emerald-600', label: '强' }
     : score >= 60
-      ? { bar: 'bg-blue-500', text: 'text-blue-600', label: '良' }
+      ? { bar: 'bg-sage-500', text: 'text-sage-600', label: '良' }
       : score >= 40
         ? { bar: 'bg-amber-400', text: 'text-amber-600', label: '中' }
         : { bar: 'bg-rose-400', text: 'text-rose-500', label: '弱' };
@@ -17,7 +17,7 @@ const overallGrade = (score: number) =>
   score >= 80
     ? { label: '竞争力强', text: 'text-emerald-600' }
     : score >= 60
-      ? { label: '有竞争力', text: 'text-blue-600' }
+      ? { label: '有竞争力', text: 'text-sage-600' }
       : score >= 40
         ? { label: '待加强', text: 'text-amber-600' }
         : { label: '起步阶段', text: 'text-rose-500' };

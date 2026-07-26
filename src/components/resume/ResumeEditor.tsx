@@ -134,7 +134,7 @@ const Field: React.FC<{
       value={value ?? ''}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
     />
   </label>
 );
@@ -151,7 +151,7 @@ const SelectField: React.FC<{
     <select
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors hover:border-gray-300 focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
     >
       <option value="">{placeholder || '请选择'}</option>
       {options.map((o) => (
@@ -184,7 +184,7 @@ const Slider: React.FC<{
       step={step}
       value={value}
       onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="w-full accent-blue-600 cursor-pointer"
+      className="w-full accent-sage-600 cursor-pointer"
     />
   </label>
 );
@@ -206,7 +206,7 @@ const IconBtn: React.FC<{
         ? 'text-gray-300 cursor-not-allowed'
         : danger
           ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-          : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+          : 'text-gray-500 hover:text-sage-600 hover:bg-sage-50'
     }`}
   >
     <Icon name={icon} />
@@ -251,7 +251,7 @@ const ToolbarPopover: React.FC<{
         onClick={() => setOpen((o) => !o)}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
           active
-            ? 'border-blue-500 bg-blue-50 text-blue-700'
+            ? 'border-sage-500 bg-sage-50 text-sage-700'
             : 'border-gray-200 text-gray-700 hover:bg-gray-50'
         }`}
       >
@@ -283,7 +283,7 @@ const SectionHeader: React.FC<{
 }> = ({ icon, title, onAdd, onExample }) => (
   <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
     <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-      <Icon name={icon} className="text-blue-600" />
+      <Icon name={icon} className="text-sage-600" />
       {title}
     </h3>
     <div className="flex items-center gap-3">
@@ -302,7 +302,7 @@ const SectionHeader: React.FC<{
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-1 text-xs font-medium text-sage-600 hover:text-sage-700"
         >
           <Icon name="plus" />
           添加
@@ -342,7 +342,7 @@ const EntryCard: React.FC<{
     onDragOver={(e) => e.preventDefault()}
     className={`rounded-xl border bg-gray-50/60 p-4 space-y-3 transition-all ${
       dragging
-        ? 'border-blue-400 shadow-md opacity-60'
+        ? 'border-sage-400 shadow-md opacity-60'
         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
     }`}
   >
@@ -695,7 +695,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       {/* 顶栏：左侧标题；右侧全局设置（模板/配色/排版/智能一页）+ 撤销重做 + 预览 + 操作 */}
       <div className="bg-white border-b px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon name="edit" className="text-blue-600" />
+          <Icon name="edit" className="text-sage-600" />
           <span className="font-semibold text-gray-900 truncate">
             编辑简历 · {data.label}
           </span>
@@ -729,7 +729,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                           active
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-sage-600 text-white'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
@@ -787,7 +787,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                     <button
                       type="button"
                       onClick={resetSettings}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-blue-600"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-sage-600"
                     >
                       <Icon name="redo" />
                       恢复默认
@@ -848,7 +848,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                             style={stack ? { fontFamily: stack } : undefined}
                             className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${
                               active
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                ? 'border-sage-500 bg-sage-50 text-sage-700'
                                 : 'border-gray-200 text-gray-600 hover:border-gray-300'
                             }`}
                           >
@@ -873,7 +873,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                             onClick={() => setHeaderLines(o.id)}
                             className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
                               active
-                                ? 'bg-blue-600 text-white border-blue-600'
+                                ? 'bg-sage-600 text-white border-sage-600'
                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                             }`}
                           >
@@ -903,7 +903,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                             onClick={() => setFieldSeparator(o.id)}
                             className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
                               active
-                                ? 'bg-blue-600 text-white border-blue-600'
+                                ? 'bg-sage-600 text-white border-sage-600'
                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                             }`}
                           >
@@ -943,7 +943,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         onDragOver={(e) => e.preventDefault()}
                         className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
                           secDrag === i
-                            ? 'border-blue-400 shadow-md opacity-60'
+                            ? 'border-sage-400 shadow-md opacity-60'
                             : 'border-gray-200'
                         } ${sec.hidden ? 'bg-gray-50' : 'bg-white'}`}
                       >
@@ -958,13 +958,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                         </span>
                         <Icon
                           name={sec.icon}
-                          className={sec.hidden ? 'text-gray-300' : 'text-blue-500'}
+                          className={sec.hidden ? 'text-gray-300' : 'text-sage-500'}
                         />
                         <input
                           type="text"
                           value={sec.title}
                           onChange={(e) => setSectionTitle(i, e.target.value)}
-                          className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-blue-500 px-2 py-1 text-sm outline-none ${
+                          className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-sage-500 px-2 py-1 text-sm outline-none ${
                             sec.hidden ? 'text-gray-400 line-through' : 'text-gray-800'
                           }`}
                         />
@@ -987,8 +987,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                             title={sec.hidden ? '点击显示' : '点击隐藏'}
                             className={`px-2 h-7 rounded-md text-xs font-medium transition-colors ${
                               sec.hidden
-                                ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                                : 'text-blue-600 hover:bg-blue-50'
+                                ? 'text-gray-400 hover:text-sage-600 hover:bg-sage-50'
+                                : 'text-sage-600 hover:bg-sage-50'
                             }`}
                           >
                             {sec.hidden ? '已隐藏' : '显示'}
@@ -1015,7 +1015,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
               title={fitApplied ? '恢复压缩前的排版' : '自动压缩排版直到塞进一页'}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 fitApplied
-                  ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-sage-600 border-sage-600 text-white hover:bg-sage-700'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -1057,7 +1057,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             title={previewMode ? '退出预览' : '全屏预览'}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
               previewMode
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                ? 'border-sage-500 bg-sage-50 text-sage-700'
                 : 'border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
           >
@@ -1071,7 +1071,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           <button
             onClick={handleSave}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors ${
-              saved ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
+              saved ? 'bg-green-600' : 'bg-sage-600 hover:bg-sage-700'
             }`}
           >
             <Icon name={saved ? 'check' : 'save'} />
@@ -1198,7 +1198,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                   证件照（可选）
                 </span>
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white bg-sage-600 hover:bg-sage-700 cursor-pointer">
                     <Icon name={photoBusy ? 'spinner' : 'image'} spin={photoBusy} />
                     <span>{data.basics.photo ? '更换' : '上传'}</span>
                     <input
@@ -1488,13 +1488,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                   <div className="rounded-lg border border-dashed border-gray-300 bg-white/70 p-3 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                        <Icon name="code" className="text-blue-500" />
+                        <Icon name="code" className="text-sage-500" />
                         公司内项目（{(w.projects || []).length}）
                       </span>
                       <button
                         type="button"
                         onClick={() => addSubProject(i)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-sage-600 hover:text-sage-700"
                       >
                         <Icon name="plus" />
                         添加项目

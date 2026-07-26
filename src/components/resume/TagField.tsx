@@ -62,12 +62,12 @@ const TagField: React.FC<{
       </span>
       <div
         onClick={() => inputRef.current?.focus()}
-        className="flex min-h-[38px] w-full cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 transition-colors hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+        className="flex min-h-[38px] w-full cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 transition-colors hover:border-gray-300 focus-within:border-sage-500 focus-within:ring-1 focus-within:ring-sage-500"
       >
         {items.map((tag, i) => (
           <span
             key={`${tag}-${i}`}
-            className="tag-pop inline-flex items-center gap-0.5 rounded-md border border-blue-100 bg-blue-50 py-0.5 pl-2 pr-1 text-xs font-medium text-blue-700"
+            className="tag-pop inline-flex items-center gap-0.5 rounded-md border border-sage-100 bg-sage-50 py-0.5 pl-2 pr-1 text-xs font-medium text-sage-700"
           >
             {tag}
             <button
@@ -77,7 +77,7 @@ const TagField: React.FC<{
                 e.stopPropagation();
                 onChange(items.filter((_, j) => j !== i));
               }}
-              className="flex h-4 w-4 items-center justify-center rounded-full text-blue-400 transition-colors hover:bg-blue-200 hover:text-blue-900"
+              className="flex h-4 w-4 items-center justify-center rounded-full text-sage-400 transition-colors hover:bg-sage-200 hover:text-sage-900"
             >
               <svg
                 viewBox="0 0 16 16"

@@ -21,7 +21,7 @@ const CompletenessPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
     <div>
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-          <Icon name="chart-bar" className="text-blue-600" />
+          <Icon name="chart-bar" className="text-sage-600" />
           简历完成度
         </h3>
         <div className="flex items-baseline gap-1.5">
@@ -64,7 +64,7 @@ const CompletenessPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
                     type="button"
                     onClick={() => go(m.sectionKey)}
                     title="定位到该分区"
-                    className="group flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-blue-50"
+                    className="group flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sage-50"
                   >
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
                     <span className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ const CompletenessPanel: React.FC<{ data: ResumeData }> = ({ data }) => {
                     </span>
                     <Icon
                       name="chevron-right"
-                      className="mt-1 shrink-0 text-gray-300 transition-colors group-hover:text-blue-500"
+                      className="mt-1 shrink-0 text-gray-300 transition-colors group-hover:text-sage-500"
                     />
                   </button>
                 </li>

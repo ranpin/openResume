@@ -46,7 +46,7 @@ const ToolBtn: React.FC<{
     title={title}
     onMouseDown={(e) => e.preventDefault()} // 保持 textarea 选区
     onClick={onClick}
-    className="h-7 min-w-7 px-1.5 flex items-center justify-center rounded text-gray-600 hover:bg-white hover:text-blue-600 text-sm transition-colors"
+    className="h-7 min-w-7 px-1.5 flex items-center justify-center rounded text-gray-600 hover:bg-white hover:text-sage-600 text-sm transition-colors"
   >
     {icon ? <Icon name={icon} /> : <span className="font-medium">{text}</span>}
   </button>
@@ -133,7 +133,7 @@ const RichTextField: React.FC<RichTextFieldProps> = ({
       <span className="block text-xs font-medium text-gray-500 mb-1">
         {label}
       </span>
-      <div className="rounded-lg border border-gray-200 transition-colors hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 focus-within:hover:border-blue-500 overflow-hidden">
+      <div className="rounded-lg border border-gray-200 transition-colors hover:border-gray-300 focus-within:border-sage-500 focus-within:ring-1 focus-within:ring-sage-500 focus-within:hover:border-sage-500 overflow-hidden">
         {/* 工具栏 */}
         <div className="flex flex-wrap items-center gap-0.5 bg-gray-50 border-b border-gray-200 px-1.5 py-1">
           <ToolBtn icon="bold" title="加粗" onClick={() => wrap('**')} />
