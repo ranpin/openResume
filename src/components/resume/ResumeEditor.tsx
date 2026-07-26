@@ -37,6 +37,7 @@ import { useResumeStore } from '../../store/useResumeStore';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
 const AiPolishPanel = lazy(() => import('./AiPolishPanel'));
+const AiTranslatePanel = lazy(() => import('./AiTranslatePanel'));
 import type {
   ResumeData,
   ResumeCustomSection,
@@ -389,6 +390,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const resetDraft = useResumeStore((s) => s.resetDraft);
   const publishedSig = useResumeStore((s) => s.published[resumeId]);
   const [publishOpen, setPublishOpen] = useState(false);
+  // 翻译成英文版面板（文档级全局功能，从查看器工具条移入编辑器工具栏）
+  const [translateOpen, setTranslateOpen] = useState(false);
   // 预览模式：隐藏左侧表单、预览占满（超级简历式全屏预览）
   const [previewMode, setPreviewMode] = useState(false);
   // 兴趣爱好编辑框：默认收起，点「添加」才展开（与其他条目式模块一致）
@@ -993,12 +996,20 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                           >
                             {sec.hidden ? '已隐藏' : '显示'}
                           </button>
-                          {sec.key === 'custom' && sec.customId && (
+                          {sec.key === 'custom' && sec.customId ? (
                             <IconBtn
                               icon="trash"
                               onClick={() => removeCustomSection(sec.customId!)}
                               title="删除该自定义模块"
                             />
+                          ) : (
+                            !sec.hidden && (
+                              <IconBtn
+                                icon="trash"
+                                onClick={() => toggleSectionHidden(i)}
+                                title="从简历中移除（可在模块管理里恢复）"
+                              />
+                            )
                           )}
                         </div>
                       </div>
@@ -1124,6 +1135,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             )}
           </ToolbarPopover>
 
+          <button
+            onClick={() => setTranslateOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
+            title="把当前简历整体翻译成英文版，生成一份新草稿"
+          >
+            <Icon name="language" />
+            <span className="hidden sm:inline">翻译成英文</span>
+          </button>
           <button
             onClick={() => setPublishOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
@@ -2114,6 +2133,21 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             resumeId={resumeId}
             data={data}
             onClose={() => setPublishOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* 翻译成英文版（BYOK）：成功后关闭编辑器，查看器展示新生成的英文草稿 */}
+      {translateOpen && (
+        <Suspense fallback={null}>
+          <AiTranslatePanel
+            resumeId={resumeId}
+            baseData={data}
+            onClose={() => setTranslateOpen(false)}
+            onTranslated={() => {
+              setTranslateOpen(false);
+              onClose();
+            }}
           />
         </Suspense>
       )}

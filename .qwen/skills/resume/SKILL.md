@@ -9,7 +9,7 @@ description: 在 ranpin/resume 仓库（简历中心 SPA）里做开发、改模
 
 ## 主色（与主站一致）
 
-应用外壳主色 = 主站的 **sage** 色板（`tailwind.config.js` 已定义）：`sage-600 #4a614a` 主动作色、`sage-500` 图标/渐变（`from-sage-500 to-sage-600`）、`sage-100/700` 标签。**外壳一律 sage，勿用回默认 blue**。刻意保留蓝色的文档层（勿改）：`resumeTheme.ts` 五套简历配色、`ResumeDocument.tsx` 文档内链接色、`resume.css` 的 `.resume-rt a` 与 `rt-c-blue` 字体色选项。经历库类别色全组件统一：项目=sage、论文=green、实习=purple、荣誉=yellow（SmartRecommendations / ResumeCatalog / ModuleRenderer 勿各搞一套）。`index.html` 启动占位与 `public/404.html` 用裸 hex（sage-500 `#5f7a5f` / sage-600 `#4a614a`）。
+应用外壳主色 = 主站的 **sage** 色板（`tailwind.config.js` 已定义）：`sage-600 #4a614a` 主动作色、`sage-500` 图标/渐变（`from-sage-500 to-sage-600`）、`sage-100/700` 标签。**外壳一律 sage，勿用回默认 blue**。刻意保留蓝色的文档层（勿改）：`resumeTheme.ts` 五套简历配色、`ResumeDocument.tsx` 文档内链接色、`resume.css` 的 `.resume-rt a` 与 `rt-c-blue` 字体色选项。经历库类别色全组件统一：项目=sage、论文=green、实习=purple、荣誉=yellow（SmartRecommendations / ResumeCatalog / ModuleRenderer 勿各搞一套）。`index.html` 启动占位与 `public/404.html` 用裸 hex（sage-500 `#5f7a5f` / sage-600 `#4a614a`）。typography 插件不会为自定义色生成 `prose-<color>`，`prose-sage` 是在 `src/styles/index.css` 手写的（只覆盖 `--tw-prose-links`），改 prose 链接色去那里。
 
 ## 验证命令（改完必跑）
 
@@ -27,8 +27,8 @@ npx vitest run             # 11 个测试文件，渲染测试用 @testing-libra
 
 全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
 
-- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除自定义模块）→「智能一页」（开关：压缩塞一页 / 再点恢复）+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「发布到线上」→「重置」（dirty 时）→「关闭」。
-- 查看器首页（`ResumeSection.tsx`）只保留创建级入口：编辑（primary）/ AI 生成 / 翻译成英文 / 导入简历；文档级操作（发布 / 导出 PDF·Word·YAML / 重置）一律在编辑器工具栏内——勿移回查看器。
+- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除模块——自定义模块真删除，内置模块 trash=隐藏、经「已隐藏」恢复）→「智能一页」（开关：压缩塞一页 / 再点恢复）+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「翻译成英文」（懒加载 `AiTranslatePanel`，成功经 `onTranslated` 关编辑器回查看器展示英文草稿）→「发布到线上」→「重置」（dirty 时）→「关闭」。
+- 查看器首页（`ResumeSection.tsx`）：**点简历横排卡片直接进编辑器**（`setActiveId + setEditing`），无独立「编辑」按钮；工具条只保留创建级入口 AI 生成 / 导入简历。文档级操作（编辑 / 翻译成英文 / 发布 / 导出 PDF·Word·YAML / 重置）一律在编辑器工具栏内——勿移回查看器。
 - 撤销/重做：单一入口 `update(fn)`——600ms 时间窗合并（连续输入/拖拽/智能一页多步各算一个撤销点），undoStack/redoStack 为 ref（上限 100），按钮 disabled 直接读 ref（靠 setDraft 触发重渲染）。**新增任何改动数据的路径必须走 `update`**，否则破坏撤销栈。
 - 预览缩放必须打印安全：`PreviewFit.tsx` 包住预览面板（编辑器 + 查看器），ResizeObserver 算 `scale = min(1, 可用宽 / 794)`，经 CSS 变量 `--preview-fit` / `--preview-fit-h` + transform 缩放；`resume.css` 里相关样式只在 `@media screen` 生效，`@media print` 下 `!important` 复位原尺寸——「导出 PDF」是 window.print()，会打印预览容器内的文档，缩放绝不能带进打印。不要把这套缩放改成内联样式或套到打印链路。
 

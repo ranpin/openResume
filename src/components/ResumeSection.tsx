@@ -12,7 +12,6 @@ import type { ResumeData } from '../types/resume';
 // 编辑器 / AI 面板仅在打开时才需要，按需加载（并避免进入 SSG 预渲染树）
 const ResumeEditor = lazy(() => import('./resume/ResumeEditor'));
 const AiGeneratePanel = lazy(() => import('./resume/AiGeneratePanel'));
-const AiTranslatePanel = lazy(() => import('./resume/AiTranslatePanel'));
 const AiImportPanel = lazy(() => import('./resume/AiImportPanel'));
 
 interface ResumeSectionProps {
@@ -28,15 +27,10 @@ const ToolbarButton: React.FC<{
   icon: string;
   label: string;
   onClick: () => void;
-  primary?: boolean;
-}> = ({ icon, label, onClick, primary }) => (
+}> = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-      primary
-        ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
-        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-    }`}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
   >
     <Icon name={icon} />
     {label}
@@ -52,7 +46,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const [view, setView] = useState<View>('resume');
   const [editing, setEditing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
-  const [translateOpen, setTranslateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
   const drafts = useResumeStore((s) => s.drafts);
@@ -149,7 +142,11 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               return (
                 <button
                   key={r.id}
-                  onClick={() => setActiveId(r.id)}
+                  onClick={() => {
+                    setActiveId(r.id);
+                    setEditing(true);
+                  }}
+                  title="点击进入编辑"
                   className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base flex items-center ${
                     active
                       ? 'bg-sage-600 text-white shadow-lg'
@@ -174,23 +171,13 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             })}
           </div>
 
-          {/* 工具条：文档级操作（发布 / 导出 / 重置）在编辑器工具栏内，这里只保留创建级入口 */}
+          {/* 工具条：点上方简历卡片直接进编辑器；这里只保留创建级入口（AI 生成 / 导入）。
+              文档级操作（编辑 / 翻译 / 发布 / 导出 / 重置）一律在编辑器工具栏内。 */}
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <ToolbarButton
-              icon="edit"
-              label="编辑"
-              primary
-              onClick={() => setEditing(true)}
-            />
             <ToolbarButton
               icon="sparkles"
               label="AI 生成"
               onClick={() => setAiOpen(true)}
-            />
-            <ToolbarButton
-              icon="language"
-              label="翻译成英文"
-              onClick={() => setTranslateOpen(true)}
             />
             <ToolbarButton
               icon="file-import"
@@ -203,8 +190,8 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-100 px-4 py-2.5 text-sm text-amber-800">
               <Icon name="exclamation-triangle" className="mt-0.5 shrink-0" />
               <span>
-                当前简历有<strong>本地修改</strong>（已自动保存在本浏览器）。点
-                <strong>「编辑」</strong>进入编辑器，可发布到线上、导出 PDF /
+                当前简历有<strong>本地修改</strong>（已自动保存在本浏览器）。点上方
+                <strong>简历卡片</strong>进入编辑器，可发布到线上、导出 PDF /
                 Word / 数据，或重置为已发布版本。
               </span>
             </div>
@@ -238,17 +225,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             resumeId={selectedId}
             baseData={current}
             onClose={() => setAiOpen(false)}
-          />
-        </Suspense>
-      )}
-
-      {/* AI 翻译 / 中英双版 */}
-      {translateOpen && current && selectedId && (
-        <Suspense fallback={null}>
-          <AiTranslatePanel
-            resumeId={selectedId}
-            baseData={current}
-            onClose={() => setTranslateOpen(false)}
           />
         </Suspense>
       )}
