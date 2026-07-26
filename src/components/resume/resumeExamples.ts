@@ -9,7 +9,6 @@ import type {
   ResumeEducation,
   ResumeLanguage,
   ResumeProject,
-  ResumeSkill,
   ResumeWork,
 } from '../../types/resume';
 
@@ -48,18 +47,10 @@ export const EXAMPLE_PROJECT: ResumeProject = {
   link: 'github.com/yourname/resume-parser',
 };
 
-export const EXAMPLE_SKILL: ResumeSkill = {
-  category: '后端开发',
-  items: ['TypeScript', 'Node.js', 'Go', 'MySQL', 'Redis', 'Kafka'],
-  levels: {
-    TypeScript: '精通',
-    'Node.js': '精通',
-    Go: '熟悉',
-    MySQL: '掌握',
-    Redis: '掌握',
-    Kafka: '熟悉',
-  },
-};
+// 专业技能示例：富文本（Markdown），每行一个类别，**加粗**为类别名
+export const EXAMPLE_SKILL =
+  '**后端开发**：TypeScript、Node.js、Go、MySQL、Redis、Kafka\n' +
+  '**工程能力**：Docker、Kubernetes、CI/CD、性能调优、分布式架构';
 
 export const EXAMPLE_AWARD: ResumeAward = {
   title: '国家奖学金',

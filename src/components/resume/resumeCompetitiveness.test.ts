@@ -47,18 +47,7 @@ const rich: ResumeData = {
       ],
     },
   ],
-  skills: [
-    {
-      category: '语言',
-      items: ['Go', 'Java', 'Python'],
-      levels: { Go: '精通', Java: '熟练', Python: '熟练' },
-    },
-    {
-      category: '中间件',
-      items: ['Redis', 'Kafka', 'MySQL'],
-      levels: { Redis: '精通' },
-    },
-  ],
+  skills: '**语言**：Go、Java、Python\n**中间件**：Redis、Kafka、MySQL',
 };
 
 describe('computeCompetitiveness', () => {

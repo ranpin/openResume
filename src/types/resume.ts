@@ -46,13 +46,6 @@ export interface ResumeWork {
   projects?: ResumeProject[];
 }
 
-export interface ResumeSkill {
-  category?: string;
-  items: string[];
-  // 可选：按技能名标注熟练度（了解/熟悉/掌握/精通），渲染为圆点；缺省则纯文本
-  levels?: Record<string, string>;
-}
-
 export interface ResumeAward {
   title: string;
   issuer?: string;
@@ -145,7 +138,7 @@ export interface ResumeData {
   education?: ResumeEducation[];
   work?: ResumeWork[];
   projects?: ResumeProject[];
-  skills?: ResumeSkill[];
+  skills?: string; // 专业技能：富文本（Markdown，同个人简介）。旧版为分组数组，载入时由 migrateResume 迁移
   awards?: ResumeAward[];
   certificates?: ResumeCertificate[];
   languages?: ResumeLanguage[];

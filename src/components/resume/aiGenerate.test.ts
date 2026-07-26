@@ -162,7 +162,7 @@ describe('parseResume', () => {
       label: '李四·后端工程师',
       basics: { name: '李四', title: '后端工程师', email: 'lisi@example.com' },
       work: [{ company: '某厂', position: '后端', highlights: ['负责订单系统'] }],
-      skills: [{ category: '语言', items: ['Go', 'Python'] }],
+      skills: '**语言**：Go、Python',
     };
     mockFetchReturning(parsed);
     const out = await parseResume({
@@ -173,6 +173,24 @@ describe('parseResume', () => {
     expect(out.basics.name).toBe('李四');
     expect(out.basics.title).toBe('后端工程师');
     expect(out.work?.[0].company).toBe('某厂');
+  });
+
+  it('migrates legacy skills array in model output to rich text', async () => {
+    // 模型若仍按旧 schema 返回分组数组，parseResume 应兜底迁移为富文本字符串
+    const legacy = {
+      label: 'x',
+      basics: { name: '王五' },
+      skills: [
+        { category: '语言', items: ['Go', 'Python'], levels: { Go: '精通' } },
+      ],
+    };
+    mockFetchReturning(legacy);
+    const out = await parseResume({
+      apiKey: 'sk-test',
+      model: 'claude-sonnet-5',
+      text: '王五',
+    });
+    expect(out.skills).toBe('**语言**：Go（精通）、Python');
   });
 
   it('throws when the parsed result has no name', async () => {

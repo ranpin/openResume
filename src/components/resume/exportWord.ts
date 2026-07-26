@@ -375,27 +375,8 @@ const renderSection = (
         ? [head(), ...data.projects.flatMap((p) => projEntry(p, ctx))]
         : [];
     case 'skills':
-      return data.skills && data.skills.length > 0
-        ? [
-            head(),
-            ...data.skills.map(
-              (s) =>
-                new Paragraph({
-                  spacing: { line: ctx.line, after: 40 },
-                  children: [
-                    ...(s.category
-                      ? [new TextRun({ text: `${s.category}：`, bold: true, size: ctx.body })]
-                      : []),
-                    ...richRuns(
-                      clean(s.items)
-                        .map((it) => (s.levels?.[it] ? `${it}（${s.levels[it]}）` : it))
-                        .join('、'),
-                      ctx.body,
-                    ),
-                  ],
-                }),
-            ),
-          ]
+      return data.skills && data.skills.trim()
+        ? [head(), ...richBlock(data.skills, ctx)]
         : [];
     case 'awards':
       return data.awards && data.awards.length > 0

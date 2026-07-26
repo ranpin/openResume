@@ -24,8 +24,50 @@ export const sanitizeResume = (d: ResumeData): ResumeData => {
       projects: w.projects ? w.projects.map(cleanProject) : w.projects,
     }));
   if (c.projects) c.projects = c.projects.map(cleanProject);
-  if (c.skills) c.skills = c.skills.map((s) => ({ ...s, items: clean(s.items) }));
+  if (typeof c.skills === 'string') {
+    const t = c.skills.trim();
+    if (t) c.skills = t;
+    else delete c.skills;
+  }
   return c;
+};
+
+// 旧版 skills 为分组数组（{category, items, levels}），现为富文本字符串。
+// 迁移规则：每组一行，类别加粗作前缀，技能用「、」连接，熟练度以括号附注。
+interface LegacySkillGroup {
+  category?: string;
+  items?: string[];
+  levels?: Record<string, string>;
+}
+
+export const legacySkillsToText = (groups: LegacySkillGroup[]): string =>
+  groups
+    .map((g) => {
+      const items = clean(g.items).map((it) =>
+        g.levels?.[it] ? `${it}（${g.levels[it]}）` : it,
+      );
+      if (items.length === 0) return '';
+      return g.category ? `**${g.category}**：${items.join('、')}` : items.join('、');
+    })
+    .filter(Boolean)
+    .join('\n');
+
+/**
+ * 数据迁移入口：把旧格式字段就地转为现行格式。
+ * 纯函数，无需迁移时原样返回（同一引用）。
+ * 调用点：content/resumes 载入（content.ts）、编辑器取数（兼容旧 localStorage 草稿）、
+ * AI 生成/导入/翻译的返回值（模型可能输出旧格式）。
+ */
+export const migrateResume = <T extends ResumeData>(d: T): T => {
+  const raw = d as T & { skills?: unknown };
+  if (Array.isArray(raw.skills)) {
+    const text = legacySkillsToText(raw.skills as LegacySkillGroup[]);
+    const next = { ...d } as T & { skills?: unknown };
+    if (text) next.skills = text;
+    else delete next.skills;
+    return next;
+  }
+  return d;
 };
 
 // 规范化内容指纹（忽略 id 与空白项差异），用于比较草稿/已发布/已提交是否一致

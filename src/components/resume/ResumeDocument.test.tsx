@@ -19,7 +19,7 @@ const base: ResumeData = {
   label: '测试简历',
   basics: { name: 'Ranpin', title: '工程师', summary: '一段简介' },
   work: [{ company: 'ACME', position: '开发', highlights: ['做了 X', ''] }],
-  skills: [{ category: '语言', items: ['C++', ''] }],
+  skills: '**语言**：C++',
 };
 
 describe('ResumeDocument', () => {
@@ -138,17 +138,18 @@ describe('ResumeDocument', () => {
     expect(cells[4].textContent).toBe('2021 - 2025');
   });
 
-  it('renders the card template: colored header card, white content cards, gray sheet', () => {
+  it('renders the card template: flat white page with each module wrapped in a rounded card', () => {
     const { container } = render(
       <ResumeDocument data={{ ...base, template: 'card' }} id="resume-print" />,
     );
     const root = container.querySelector('#resume-print') as HTMLElement;
-    expect(root.classList.contains('resume-color-exact')).toBe(true);
-    expect(root.classList.contains('bg-slate-100')).toBe(true);
-    // 主题色头部卡片（默认 blue 主题）
-    expect(container.querySelectorAll('header.bg-blue-800').length).toBeGreaterThan(0);
-    // 其余模块包在白色圆角卡片里
-    expect(container.querySelectorAll('.bg-white.rounded-xl.border').length).toBeGreaterThan(0);
+    // 页面整体扁平白底（不再是灰色卡片式页底）
+    expect(root.classList.contains('bg-white')).toBe(true);
+    expect(root.classList.contains('bg-slate-100')).toBe(false);
+    // 头部沿用经典单栏样式（不再是主题色块头部）
+    expect(container.querySelectorAll('header.bg-blue-800')).toHaveLength(0);
+    // 其余各模块内容包一层白色圆角卡片
+    expect(container.querySelectorAll('.rounded-xl.border.bg-white').length).toBeGreaterThan(0);
   });
 
   it('reports page count via onPages (智能一页)', () => {
@@ -313,29 +314,20 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/高等数学、数据结构/).length).toBeGreaterThan(0);
   });
 
-  it('renders skill proficiency dots when levels are set', () => {
-    const { container } = render(
+  it('renders skills as rich text (grouped by category, bold)', () => {
+    render(
       <ResumeDocument
         data={{
           ...base,
-          skills: [
-            {
-              category: '语言',
-              items: ['C++', 'Python'],
-              levels: { 'C++': '精通', Python: '熟悉' },
-            },
-          ],
+          skills: '**语言**：C++、Python\n**框架**：React、Node.js',
         }}
         id="resume-print"
       />,
     );
-    const cpp = container.querySelector('[title="精通"]');
-    const py = container.querySelector('[title="熟悉"]');
-    expect(cpp).not.toBeNull();
-    expect(py).not.toBeNull();
-    // 精通=4 实心圆点，熟悉=2
-    expect(cpp!.querySelectorAll('.bg-gray-700').length).toBe(4);
-    expect(py!.querySelectorAll('.bg-gray-700').length).toBe(2);
+    expect(screen.getAllByText('专业技能').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('语言').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('框架').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/C\+\+、Python/).length).toBeGreaterThan(0);
   });
 
   it('renders custom sections (自定义模块) with their own title and content', () => {
@@ -378,7 +370,7 @@ describe('ResumeDocument', () => {
           education: [EXAMPLE_EDUCATION],
           work: [EXAMPLE_WORK],
           projects: [EXAMPLE_PROJECT],
-          skills: [EXAMPLE_SKILL],
+          skills: EXAMPLE_SKILL,
           awards: [EXAMPLE_AWARD],
           certificates: [EXAMPLE_CERTIFICATE],
           languages: [EXAMPLE_LANGUAGE],

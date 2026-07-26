@@ -24,7 +24,7 @@ export function computeCompetitiveness(d: ResumeData): CompetitivenessResult {
   const edu = d.education || [];
   const work = d.work || [];
   const projects = d.projects || [];
-  const skills = d.skills || [];
+  const skills = stripMd(d.skills || '');
 
   const highlights: string[] = [];
   work.forEach((w) => (w.highlights || []).forEach((h) => highlights.push(h)));
@@ -63,19 +63,18 @@ export function computeCompetitiveness(d: ResumeData): CompetitivenessResult {
         : '多用数字（提升 X%、服务 N 万用户）量化你的成果。',
   };
 
-  // 3. 技能画像：技能数量 + 是否标注熟练度
-  const items = skills.flatMap((s) => (s.items || []).filter(has));
-  const leveled = skills.flatMap((s) => Object.keys(s.levels || {}));
-  const skillBase = clamp((items.length / 8) * 80);
-  const levelBonus = items.length > 0 ? clamp((leveled.length / items.length) * 20) : 0;
+  // 3. 技能画像：从富文本拆出技能词条计数（8 条及以上视为充实）
+  const skillItems = skills
+    .split(/[\s、，,;；：:/|]+/)
+    .filter((s) => s.length >= 2);
   const skill: Dimension = {
     key: 'skill',
     label: '技能画像',
-    score: clamp(skillBase + levelBonus),
+    score: clamp((skillItems.length / 8) * 100),
     hint:
-      items.length >= 6 && leveled.length > 0
-        ? '技能清晰且标注了熟练度。'
-        : '补充核心技能并标注熟练度，画像更立体。',
+      skillItems.length >= 8
+        ? '技能丰富，画像清晰。'
+        : '补充更多核心技能（建议 8 项以上），画像更立体。',
   };
 
   // 4. 教育背景：条目完整度 + GPA + 课程

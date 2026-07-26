@@ -28,7 +28,6 @@ export function computeCompleteness(d: ResumeData): CompletenessResult {
   const edu = d.education || [];
   const work = d.work || [];
   const projects = d.projects || [];
-  const skills = d.skills || [];
   const awards = d.awards || [];
   const certs = d.certificates || [];
 
@@ -41,7 +40,7 @@ export function computeCompleteness(d: ResumeData): CompletenessResult {
   const goodProject = projects.some(
     (p) => has(p.name) && (p.highlights || []).some(solid),
   );
-  const hasSkillItems = skills.some((s) => (s.items || []).some(has));
+  const hasSkillItems = solid(d.skills);
 
   // 经历丰富度：工作/项目至少有一类写了 2 条以上要点
   const richHighlights =
@@ -108,7 +107,7 @@ export function computeCompleteness(d: ResumeData): CompletenessResult {
     {
       key: 'skills',
       label: '专业技能',
-      tip: '列出核心技能，可标注熟练度让画像更清晰。',
+      tip: '列出核心技能，让 HR 快速判断匹配度。',
       weight: 10,
       done: hasSkillItems,
       sectionKey: 'skills',

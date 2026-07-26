@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import Icon from '../Icon';
 import ResumeDocument from './ResumeDocument';
+import PreviewFit from './PreviewFit';
 import RichTextField from './RichTextField';
 import PeriodField from './PeriodField';
 import TagField from './TagField';
@@ -10,6 +11,7 @@ import {
   downloadResumeYaml,
   fileToResizedDataUrl,
   isSameResume,
+  migrateResume,
   normalizeResume,
 } from './resumeIo';
 import { THEME_OPTIONS, TEMPLATE_OPTIONS } from './resumeTheme';
@@ -49,7 +51,6 @@ type ArrayKey =
   | 'education'
   | 'work'
   | 'projects'
-  | 'skills'
   | 'awards'
   | 'certificates'
   | 'languages'
@@ -68,9 +69,6 @@ const LANGUAGE_LEVELS = [
   '雅思 7+',
   '托福 100+',
 ];
-
-// 技能熟练度四级（与渲染端圆点一一对应：了解=1 … 精通=4）
-const SKILL_LEVELS = ['了解', '熟悉', '掌握', '精通'];
 
 // 全局排版设置的默认值与范围（滑块）
 const SETTING_DEFAULTS = {
@@ -392,8 +390,15 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const [publishOpen, setPublishOpen] = useState(false);
   // 预览模式：隐藏左侧表单、预览占满（超级简历式全屏预览）
   const [previewMode, setPreviewMode] = useState(false);
+  // 兴趣爱好编辑框：默认收起，点「添加」才展开（与其他条目式模块一致）
+  const [interestsOpen, setInterestsOpen] = useState(false);
 
-  const data: ResumeData = draft ?? published;
+  // 旧草稿可能还是 skills 分组数组的旧结构，读出时统一迁移为富文本字符串
+  // （首次编辑经 update 写回后即归一化）
+  const data: ResumeData = useMemo(
+    () => migrateResume(draft ?? published),
+    [draft, published],
+  );
   // 是否有未发布改动：与内置基线、最近一次发布都不同
   const dirty =
     !!draft &&
@@ -899,6 +904,94 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
               )}
             </ToolbarPopover>
 
+            <ToolbarPopover
+              icon="arrows-alt"
+              label="模块"
+              title="模块管理"
+              panelClassName="w-[26rem] max-w-[92vw] max-h-[70vh] overflow-y-auto"
+            >
+              {() => (
+                <div>
+                  <p className="mb-3 text-[11px] text-gray-400">
+                    拖动或用箭头调整模块顺序；改名后简历分区标题随之变化；可隐藏暂不需要的模块。
+                  </p>
+                  <div className="space-y-2">
+                    {resolved.map((sec, i) => (
+                      <div
+                        key={sec.customId ? `custom:${sec.customId}` : sec.key}
+                        onDragEnter={() => {
+                          if (secDrag === null || secDrag === i) return;
+                          moveSectionTo(secDrag, i);
+                          setSecDrag(i);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
+                          secDrag === i
+                            ? 'border-blue-400 shadow-md opacity-60'
+                            : 'border-gray-200'
+                        } ${sec.hidden ? 'bg-gray-50' : 'bg-white'}`}
+                      >
+                        <span
+                          draggable
+                          onDragStart={() => setSecDrag(i)}
+                          onDragEnd={() => setSecDrag(null)}
+                          title="拖拽排序"
+                          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1"
+                        >
+                          <Icon name="arrows-alt" />
+                        </span>
+                        <Icon
+                          name={sec.icon}
+                          className={sec.hidden ? 'text-gray-300' : 'text-blue-500'}
+                        />
+                        <input
+                          type="text"
+                          value={sec.title}
+                          onChange={(e) => setSectionTitle(i, e.target.value)}
+                          className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-blue-500 px-2 py-1 text-sm outline-none ${
+                            sec.hidden ? 'text-gray-400 line-through' : 'text-gray-800'
+                          }`}
+                        />
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <IconBtn
+                            icon="arrow-up"
+                            onClick={() => moveSection(i, -1)}
+                            disabled={i === 0}
+                            title="上移"
+                          />
+                          <IconBtn
+                            icon="arrow-down"
+                            onClick={() => moveSection(i, 1)}
+                            disabled={i === resolved.length - 1}
+                            title="下移"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleSectionHidden(i)}
+                            title={sec.hidden ? '点击显示' : '点击隐藏'}
+                            className={`px-2 h-7 rounded-md text-xs font-medium transition-colors ${
+                              sec.hidden
+                                ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                : 'text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            {sec.hidden ? '已隐藏' : '显示'}
+                          </button>
+                          {sec.key === 'custom' && sec.customId && (
+                            <IconBtn
+                              icon="trash"
+                              onClick={() => removeCustomSection(sec.customId!)}
+                              title="删除该自定义模块"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ToolbarPopover>
+
             <button
               type="button"
               onClick={startSmartFit}
@@ -1061,87 +1154,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 value={data.target}
                 onChange={(v) => update((d) => (d.target = v))}
               />
-            </div>
-          </section>
-
-          {/* 模块管理：顺序 / 改名 / 显隐 */}
-          <section>
-            <SectionHeader icon="arrows-alt" title="模块管理" />
-            <p className="-mt-1 mb-3 text-[11px] text-gray-400">
-              拖动或用箭头调整模块顺序；改名后简历分区标题随之变化；可隐藏暂不需要的模块。
-            </p>
-            <div className="space-y-2">
-              {resolved.map((sec, i) => (
-                <div
-                  key={sec.customId ? `custom:${sec.customId}` : sec.key}
-                  onDragEnter={() => {
-                    if (secDrag === null || secDrag === i) return;
-                    moveSectionTo(secDrag, i);
-                    setSecDrag(i);
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                  className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
-                    secDrag === i
-                      ? 'border-blue-400 shadow-md opacity-60'
-                      : 'border-gray-200'
-                  } ${sec.hidden ? 'bg-gray-50' : 'bg-white'}`}
-                >
-                  <span
-                    draggable
-                    onDragStart={() => setSecDrag(i)}
-                    onDragEnd={() => setSecDrag(null)}
-                    title="拖拽排序"
-                    className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1"
-                  >
-                    <Icon name="arrows-alt" />
-                  </span>
-                  <Icon
-                    name={sec.icon}
-                    className={sec.hidden ? 'text-gray-300' : 'text-blue-500'}
-                  />
-                  <input
-                    type="text"
-                    value={sec.title}
-                    onChange={(e) => setSectionTitle(i, e.target.value)}
-                    className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-blue-500 px-2 py-1 text-sm outline-none ${
-                      sec.hidden ? 'text-gray-400 line-through' : 'text-gray-800'
-                    }`}
-                  />
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <IconBtn
-                      icon="arrow-up"
-                      onClick={() => moveSection(i, -1)}
-                      disabled={i === 0}
-                      title="上移"
-                    />
-                    <IconBtn
-                      icon="arrow-down"
-                      onClick={() => moveSection(i, 1)}
-                      disabled={i === resolved.length - 1}
-                      title="下移"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => toggleSectionHidden(i)}
-                      title={sec.hidden ? '点击显示' : '点击隐藏'}
-                      className={`px-2 h-7 rounded-md text-xs font-medium transition-colors ${
-                        sec.hidden
-                          ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                          : 'text-blue-600 hover:bg-blue-50'
-                      }`}
-                    >
-                      {sec.hidden ? '已隐藏' : '显示'}
-                    </button>
-                    {sec.key === 'custom' && sec.customId && (
-                      <IconBtn
-                        icon="trash"
-                        onClick={() => removeCustomSection(sec.customId!)}
-                        title="删除该自定义模块"
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </section>
 
@@ -1643,97 +1655,26 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
           {/* 专业技能 */}
           <section id="sec-skills">
-            <SectionHeader
-              icon="cogs"
-              title={titleOf('skills')}
-              onExample={() =>
-                update((d) => {
-                  d.skills ||= [];
-                  d.skills.push(EXAMPLE_SKILL);
-                })
-              }
-              onAdd={() =>
-                update((d) => {
-                  d.skills ||= [];
-                  d.skills.push({ category: '', items: [] });
-                })
-              }
-            />
-            <div className="space-y-3">
-              {(data.skills || []).map((s, i) => (
-                <EntryCard
-                  key={i}
-                  label="技能"
-                  index={i}
-                  total={(data.skills || []).length}
-                  {...dragProps('skills', i)}
-                  onUp={() =>
-                    update((d) => d.skills && moveInArray(d.skills, i, -1))
-                  }
-                  onDown={() =>
-                    update((d) => d.skills && moveInArray(d.skills, i, 1))
-                  }
-                  onDelete={() => update((d) => d.skills?.splice(i, 1))}
-                >
-                  <Field
-                    label="类别"
-                    value={s.category}
-                    onChange={(v) =>
-                      update((d) => d.skills && (d.skills[i].category = v))
-                    }
-                  />
-                  <TagField
-                    label="技能项"
-                    placeholder="如 C++, Python"
-                    items={s.items || []}
-                    onChange={(v) =>
-                      update((d) => d.skills && (d.skills[i].items = v))
-                    }
-                  />
-                  {(s.items || []).filter((t) => t && t.trim()).length > 0 && (
-                    <div>
-                      <span className="block text-xs font-medium text-gray-500 mb-1">
-                        熟练度（可选，渲染为圆点）
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {(s.items || [])
-                          .filter((t) => t && t.trim())
-                          .map((it) => (
-                            <label
-                              key={it}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:border-gray-300"
-                            >
-                              <span className="text-gray-700">{it}</span>
-                              <select
-                                value={s.levels?.[it] || ''}
-                                onChange={(e) => {
-                                  const lv = e.target.value;
-                                  update((d) => {
-                                    if (!d.skills) return;
-                                    const sk = d.skills[i];
-                                    sk.levels = { ...(sk.levels || {}) };
-                                    if (lv) sk.levels[it] = lv;
-                                    else delete sk.levels[it];
-                                    if (Object.keys(sk.levels).length === 0)
-                                      delete sk.levels;
-                                  });
-                                }}
-                                className="bg-transparent outline-none cursor-pointer text-gray-500"
-                              >
-                                <option value="">—</option>
-                                {SKILL_LEVELS.map((l) => (
-                                  <option key={l} value={l}>
-                                    {l}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </EntryCard>
-              ))}
+            <SectionHeader icon="cogs" title={titleOf('skills')} />
+            <div className="mt-1">
+              {!(data.skills || '').trim() && (
+                <div className="flex justify-end mb-1">
+                  <button
+                    type="button"
+                    onClick={() => update((d) => (d.skills = EXAMPLE_SKILL))}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700"
+                  >
+                    <Icon name="lightbulb" />
+                    填入示例
+                  </button>
+                </div>
+              )}
+              <RichTextField
+                label="专业技能"
+                value={data.skills}
+                rows={4}
+                onChange={(v) => update((d) => (d.skills = v))}
+              />
             </div>
           </section>
 
@@ -2027,22 +1968,29 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader
               icon="heart"
               title={titleOf('interests')}
-              onExample={() =>
+              onAdd={() => setInterestsOpen(true)}
+              onExample={() => {
                 update((d) => {
                   const cur = d.interests || [];
                   d.interests = [
                     ...cur,
                     ...EXAMPLE_INTERESTS.filter((x) => !cur.includes(x)),
                   ];
-                })
-              }
+                });
+                setInterestsOpen(true);
+              }}
             />
-            <TagField
-              label="兴趣爱好"
-              placeholder="如 篮球、摄影、开源社区"
-              items={data.interests || []}
-              onChange={(v) => update((d) => (d.interests = v))}
-            />
+            {((data.interests || []).length > 0 || interestsOpen) && (
+              <TagField
+                label="兴趣爱好"
+                placeholder="如 篮球、摄影、开源社区"
+                items={data.interests || []}
+                onChange={(v) => {
+                  update((d) => (d.interests = v));
+                  if (v.length === 0) setInterestsOpen(false);
+                }}
+              />
+            )}
           </section>
 
           {/* 自定义模块：自由标题 + 富文本正文 */}
@@ -2054,7 +2002,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             />
             <p className="-mt-1 mb-3 text-[11px] text-gray-400">
               需要「自我评价」「在校经历」「科研经历」等额外分区时，点「添加」新建一个自定义模块；
-              标题与顺序可在上方「模块管理」里调整。
+              标题与顺序可在顶部工具栏「模块」里调整。
             </p>
             {(data.custom || []).length === 0 ? (
               <p className="text-xs text-gray-400">
@@ -2105,14 +2053,15 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         </div>
         )}
 
-        {/* 右：实时预览（真·多页）；预览模式下占满整行 */}
-        <div
+        {/* 右：实时预览（真·多页）；预览模式下占满整行。
+            PreviewFit：可用宽度不足一页 A4 时等比缩小，避免预览被裁切/覆盖。 */}
+        <PreviewFit
           className={`overflow-auto bg-gray-100 p-4 sm:p-8 ${
             previewMode ? 'md:col-span-2' : ''
           }`}
         >
           <ResumeDocument data={data} onPages={handlePages} />
-        </div>
+        </PreviewFit>
       </div>
 
       {/* 保存反馈 toast */}

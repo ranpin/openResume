@@ -30,7 +30,7 @@ const full: ResumeData = {
   projects: [
     { name: 'P 项目', highlights: ['从 0 到 1 搭建解析服务，准确率 95%'] },
   ],
-  skills: [{ category: '语言', items: ['Go', 'TS'] }],
+  skills: '**语言**：Go、TS',
   awards: [{ title: '奖学金' }],
 };
 

@@ -95,7 +95,7 @@ describe('runChecks', () => {
           highlights: ['重构核心链路，延迟下降 80%', '落地缓存方案，成本下降 60%'],
         },
       ],
-      skills: [{ category: '语言', items: ['Go'], levels: { Go: '精通' } }],
+      skills: '**语言**：Go',
       awards: [{ title: '奖学金' }],
     };
     const issues = runChecks(d);

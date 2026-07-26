@@ -13,6 +13,31 @@
   }
 }
 
+/* 预览自适应（PreviewFit）：可用宽度不足一页 A4 宽时等比例缩小预览。
+   sizer 占据缩放后的布局尺寸并裁掉溢出，inner 做 transform 缩放；
+   仅 screen 生效，打印时包裹层重置为透明（保证导出 PDF 版面不受影响）。 */
+@media screen {
+  .preview-fit-sizer {
+    width: calc(794px * var(--preview-fit, 1));
+    height: calc(var(--preview-fit-h, 1123px) * var(--preview-fit, 1));
+    overflow: hidden;
+  }
+  .preview-fit-inner {
+    width: 794px;
+    transform: scale(var(--preview-fit, 1));
+    transform-origin: top left;
+  }
+}
+@media print {
+  .preview-fit-sizer,
+  .preview-fit-inner {
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+}
+
 /* 全局排版设置：由 data.settings 通过内联 CSS 变量下发到 .resume-root。
    字号统一用 calc(基准px * --rs-scale) 表达，行距/块间距用变量，实现「一处调、全局变」。 */
 .resume-root {
@@ -191,4 +216,26 @@
 }
 .resume-rt .rt-c-black {
   color: #111827;
+}
+
+/* 深色底（双栏侧边模板侧栏）内的富文本：整体换浅色文字 */
+.resume-rt.resume-rt-on-dark {
+  color: rgba(255, 255, 255, 0.9);
+}
+.resume-rt.resume-rt-on-dark strong {
+  color: #fff;
+}
+.resume-rt.resume-rt-on-dark a {
+  color: #bfdbfe; /* blue-200 */
+}
+.resume-rt.resume-rt-on-dark code {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.resume-rt.resume-rt-on-dark ul > li::before {
+  color: rgba(255, 255, 255, 0.5);
+}
+.resume-rt.resume-rt-on-dark blockquote {
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.75);
 }

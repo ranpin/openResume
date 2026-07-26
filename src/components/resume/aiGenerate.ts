@@ -1,4 +1,5 @@
 import type { ResumeData } from '../../types/resume';
+import { migrateResume } from './resumeIo';
 
 // 浏览器直连 Anthropic Messages API 生成简历（BYOK：用户自带密钥）。
 // 纯静态站无后端，密钥仅存用户本地浏览器、不入库、不经服务器；仅站点所有者本人使用。
@@ -62,8 +63,8 @@ export function extractJson(text: string): unknown {
 
 const SYSTEM = `你是资深简历顾问。只输出一个 JSON 对象，符合下面的 TypeScript 类型，禁止输出任何解释或 markdown 代码块：
 type Project = {name:string;role?:string;period?:string;tech?:string[];highlights?:string[];link?:string};
-type ResumeData = { label:string; target?:string; template?:'classic'|'sidebar'|'compact'; theme?:'blue'|'emerald'|'violet'|'rose'|'slate'; settings?:{fontScale?:number;lineHeight?:number;blockGap?:number;pageMargin?:number;fontFamily?:'default'|'song'|'hei'|'kai'|'serif'}; sections?:{key:'summary'|'education'|'work'|'projects'|'skills'|'awards'|'certificates'|'languages'|'activities'|'interests';title?:string;hidden?:boolean}[]; basics:{name:string;title?:string;email?:string;phone?:string;location?:string;website?:string;github?:string;summary?:string;photo?:string}; education?:{school:string;college?:string;degree?:string;major?:string;period?:string;gpa?:string;courses?:string;detail?:string}[]; work?:{company:string;position?:string;period?:string;location?:string;highlights?:string[];projects?:Project[]}[]; projects?:Project[]; skills?:{category?:string;items:string[];levels?:{[name:string]:'了解'|'熟悉'|'掌握'|'精通'}}[]; awards?:{title:string;issuer?:string;date?:string}[]; certificates?:{name:string;issuer?:string;date?:string}[]; languages?:{name:string;level?:string}[]; activities?:{name:string;role?:string;period?:string;highlights?:string[]}[]; interests?:string[] };
-规则：保留候选人真实信息，不要编造经历或数字；针对 JD 调整措辞与条目顺序，突出匹配点；要点简洁有力，可用 **粗体** 强调关键成果/数字；语言与 JD 保持一致（默认中文）。若同一公司有多个项目，用 work[].projects 承载；不要臆造 photo（证件照由用户上传）；sections/settings 保持用户原值，除非 JD 明显需要调整模块顺序。`;
+type ResumeData = { label:string; target?:string; template?:'classic'|'sidebar'|'compact'; theme?:'blue'|'emerald'|'violet'|'rose'|'slate'; settings?:{fontScale?:number;lineHeight?:number;blockGap?:number;pageMargin?:number;fontFamily?:'default'|'song'|'hei'|'kai'|'serif'}; sections?:{key:'summary'|'education'|'work'|'projects'|'skills'|'awards'|'certificates'|'languages'|'activities'|'interests';title?:string;hidden?:boolean}[]; basics:{name:string;title?:string;email?:string;phone?:string;location?:string;website?:string;github?:string;summary?:string;photo?:string}; education?:{school:string;college?:string;degree?:string;major?:string;period?:string;gpa?:string;courses?:string;detail?:string}[]; work?:{company:string;position?:string;period?:string;location?:string;highlights?:string[];projects?:Project[]}[]; projects?:Project[]; skills?:string; awards?:{title:string;issuer?:string;date?:string}[]; certificates?:{name:string;issuer?:string;date?:string}[]; languages?:{name:string;level?:string}[]; activities?:{name:string;role?:string;period?:string;highlights?:string[]}[]; interests?:string[] };
+规则：保留候选人真实信息，不要编造经历或数字；针对 JD 调整措辞与条目顺序，突出匹配点；要点简洁有力，可用 **粗体** 强调关键成果/数字；skills 是一段 Markdown 富文本（同 summary），按类别分组，如「**编程语言**：C++、Python」；语言与 JD 保持一致（默认中文）。若同一公司有多个项目，用 work[].projects 承载；不要臆造 photo（证件照由用户上传）；sections/settings 保持用户原值，除非 JD 明显需要调整模块顺序。`;
 
 export async function generateResume(opts: GenerateOpts): Promise<ResumeData> {
   const { apiKey, model, jd, base, signal } = opts;
@@ -85,7 +86,7 @@ ${docTitles.join('、') || '（无）'}
   if (!parsed || !parsed.basics || !parsed.basics.name) {
     throw new Error('模型返回的内容不是有效的简历 JSON');
   }
-  return parsed;
+  return migrateResume(parsed);
 }
 
 // 浏览器直连 Anthropic 的底层调用：返回模型文本。供生成 / 润色 / 翻译等复用。
@@ -175,9 +176,9 @@ ${JSON.stringify(cleaned, null, 2)}
 const TRANSLATE_SYSTEM = `你是专业的简历翻译，把简历翻译成地道、专业的英文。
 规则：
 - 只输出一个 JSON 对象，结构与输入的 ResumeData 完全一致，禁止输出解释或 markdown 代码块；
-- 翻译所有面向人类阅读的文本为英文：label、target，basics 的 title/summary/location，education 的 school/college/degree/major/courses/detail，work 的 company/position/location/highlights 及其内嵌 projects，projects 的 name/role/highlights，skills 的 category/items，awards 的 title/issuer，certificates 的 name/issuer，languages 的 name/level，activities 的 name/role/highlights，interests，以及 sections 里的自定义 title；
+- 翻译所有面向人类阅读的文本为英文：label、target，basics 的 title/summary/location，education 的 school/college/degree/major/courses/detail，work 的 company/position/location/highlights 及其内嵌 projects，projects 的 name/role/highlights，skills（一段 Markdown 富文本字符串），awards 的 title/issuer，certificates 的 name/issuer，languages 的 name/level，activities 的 name/role/highlights，interests，以及 sections 里的自定义 title；
 - 保留专有名词与技术栈原名（如 React、TypeScript、Kubernetes、Vue、GitHub 等）不翻译；
-- 以下字段原样保留不动：id、basics.name（人名可转为拼音或英文写法）、email、phone、website、github、photo、avatar、所有 link、各类 period/date 的数字与格式、template、theme、settings、sections 的 key 与 hidden、skills.levels 的键与值（了解/熟悉/掌握/精通 保持不变）；
+- 以下字段原样保留不动：id、basics.name（人名可转为拼音或英文写法）、email、phone、website、github、photo、avatar、所有 link、各类 period/date 的数字与格式、template、theme、settings、sections 的 key 与 hidden；
 - 英文要点用动词开头、简洁有力，可保留 **粗体** 标记；
 - 不要编造新的经历或数字，不要增删条目，保持条数与顺序不变。`;
 
@@ -199,16 +200,16 @@ ${JSON.stringify(base)}`;
   if (!parsed || !parsed.basics) {
     throw new Error('模型返回的内容不是有效的简历 JSON');
   }
-  return parsed;
+  return migrateResume(parsed);
 }
 
 const PARSE_SYSTEM = `你是资深简历顾问，擅长把任意格式的简历文本解析成结构化数据。只输出一个 JSON 对象，符合下面的 TypeScript 类型，禁止输出任何解释或 markdown 代码块：
 type Project = {name:string;role?:string;period?:string;tech?:string[];highlights?:string[];link?:string};
-type ResumeData = { label:string; target?:string; template?:'classic'|'sidebar'|'compact'; theme?:'blue'|'emerald'|'violet'|'rose'|'slate'; sections?:{key:'summary'|'education'|'work'|'projects'|'skills'|'awards'|'certificates'|'languages'|'activities'|'interests'|'custom';title?:string;hidden?:boolean;customId?:string}[]; custom?:{id:string;title:string;content?:string}[]; basics:{name:string;title?:string;email?:string;phone?:string;location?:string;website?:string;github?:string;summary?:string}; education?:{school:string;college?:string;degree?:string;major?:string;period?:string;gpa?:string;courses?:string;detail?:string}[]; work?:{company:string;position?:string;period?:string;location?:string;highlights?:string[];projects?:Project[]}[]; projects?:Project[]; skills?:{category?:string;items:string[]}[]; awards?:{title:string;issuer?:string;date?:string}[]; certificates?:{name:string;issuer?:string;date?:string}[]; languages?:{name:string;level?:string}[]; activities?:{name:string;role?:string;period?:string;highlights?:string[]}[]; interests?:string[] };
+type ResumeData = { label:string; target?:string; template?:'classic'|'sidebar'|'compact'; theme?:'blue'|'emerald'|'violet'|'rose'|'slate'; sections?:{key:'summary'|'education'|'work'|'projects'|'skills'|'awards'|'certificates'|'languages'|'activities'|'interests'|'custom';title?:string;hidden?:boolean;customId?:string}[]; custom?:{id:string;title:string;content?:string}[]; basics:{name:string;title?:string;email?:string;phone?:string;location?:string;website?:string;github?:string;summary?:string}; education?:{school:string;college?:string;degree?:string;major?:string;period?:string;gpa?:string;courses?:string;detail?:string}[]; work?:{company:string;position?:string;period?:string;location?:string;highlights?:string[];projects?:Project[]}[]; projects?:Project[]; skills?:string; awards?:{title:string;issuer?:string;date?:string}[]; certificates?:{name:string;issuer?:string;date?:string}[]; languages?:{name:string;level?:string}[]; activities?:{name:string;role?:string;period?:string;highlights?:string[]}[]; interests?:string[] };
 规则：
 - 从用户给的简历文本里如实抽取信息，不要编造原文没有的经历、数字或字段；原文没有的字段直接省略；
 - label 用「姓名+目标岗位」或姓名概括（如「张三·前端工程师」）；
-- 要点拆成 highlights 数组，每条简洁有力；能识别出的技术栈放进 tech / skills；
+- 要点拆成 highlights 数组，每条简洁有力；能识别出的技术栈放进 tech / skills（skills 为 Markdown 字符串，按类别分组，如「**编程语言**：C++、Python」）；
 - 保持候选人原语言（中文简历输出中文）；
 - 不要臆造 photo / avatar。`;
 
@@ -230,5 +231,5 @@ ${text}`;
   if (!parsed || !parsed.basics || !parsed.basics.name) {
     throw new Error('未能从文本中解析出有效的简历（至少需要姓名）');
   }
-  return parsed;
+  return migrateResume(parsed);
 }

@@ -57,13 +57,10 @@ projects:
       - 设计模块化系统与消息路由机制，支持多种 Agent 场景快速开发
       - 编写开发指南与 API 文档，降低团队接入成本
 
-skills:
-  - category: 编程语言
-    items: [C++, Python]
-  - category: 推理 / 框架
-    items: [vLLM, QNN, GenAI SDK, AADK, LoRA]
-  - category: 领域
-    items: [端侧大模型, AI Agent, 性能优化, 多模态记忆]
+skills: |
+  **编程语言**：C++、Python
+  **推理 / 框架**：vLLM、QNN、GenAI SDK、AADK、LoRA
+  **领域**：端侧大模型、AI Agent、性能优化、多模态记忆
 
 awards:
   - title: Lantu 项目成功交付
