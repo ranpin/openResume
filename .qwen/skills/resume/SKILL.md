@@ -19,6 +19,14 @@ npx vitest run             # 11 个测试文件，渲染测试用 @testing-libra
 `PYTHONPATH=$HOME/.local/lib/python3.13/site-packages python3`，`p.chromium.launch(channel="chrome", headless=True)`。
 注意：验证时点击编辑器会写 localStorage 草稿（key `ranpin-resume-drafts`），脚本里先快照、结束后恢复。
 
+## 编辑器界面结构（超级简历式）
+
+全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
+
+- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」三个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭）→「智能一页」+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「发布到线上」→「重置」（dirty 时）→「关闭」。
+- 撤销/重做：单一入口 `update(fn)`——600ms 时间窗合并（连续输入/拖拽/智能一页多步各算一个撤销点），undoStack/redoStack 为 ref（上限 100），按钮 disabled 直接读 ref（靠 setDraft 触发重渲染）。**新增任何改动数据的路径必须走 `update`**，否则破坏撤销栈。
+- 刻意未做预览缩放：任何 transform/scale 容器都会包住 `#resume-print` 影响打印导出，而打印无法用 Playwright 验证。
+
 ## 渲染架构（最重要的不变量）
 
 `ResumeDocument.tsx` 对 classic/compact/card 同时渲染两份：

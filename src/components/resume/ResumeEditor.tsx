@@ -214,6 +214,68 @@ const IconBtn: React.FC<{
   </button>
 );
 
+/**
+ * 顶栏下拉面板（超级简历式）：点击按钮展开设置面板，点外部 / Esc 关闭。
+ * 全局设置（模板 / 配色 / 排版 / 导出）都收进这里，左侧面板只留内容编辑。
+ */
+const ToolbarPopover: React.FC<{
+  icon: string;
+  label: string;
+  active?: boolean;
+  align?: 'left' | 'right';
+  panelClassName?: string;
+  title?: string;
+  children: (close: () => void) => React.ReactNode;
+}> = ({ icon, label, active, align = 'left', panelClassName, title, children }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        title={title}
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+          active
+            ? 'border-blue-500 bg-blue-50 text-blue-700'
+            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+        }`}
+      >
+        <Icon name={icon} />
+        <span className="hidden lg:inline">{label}</span>
+        <Icon
+          name="chevron-down"
+          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div
+          className={`absolute top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-4 ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } ${panelClassName || 'w-72'}`}
+        >
+          {children(() => setOpen(false))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SectionHeader: React.FC<{
   icon: string;
   title: string;
@@ -328,6 +390,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const resetDraft = useResumeStore((s) => s.resetDraft);
   const publishedSig = useResumeStore((s) => s.published[resumeId]);
   const [publishOpen, setPublishOpen] = useState(false);
+  // 预览模式：隐藏左侧表单、预览占满（超级简历式全屏预览）
+  const [previewMode, setPreviewMode] = useState(false);
 
   const data: ResumeData = draft ?? published;
   // 是否有未发布改动：与内置基线、最近一次发布都不同
@@ -336,10 +400,41 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     !isSameResume(data, published) &&
     publishedSig !== normalizeResume(data);
 
+  // 撤销/重做：历史栈用 ref 持有；短时间内的连续编辑（打字、拖拽、智能一页的
+  // 逐级压缩）合并为一个撤销点，避免逐字符撤销。所有内容改动都经 update 这一
+  // 入口，在写回前快照改动前的 data；栈的每次变化都伴随 setDraft → 重渲染，
+  // 按钮 disabled 直接读 ref 即可。
+  const undoStack = useRef<ResumeData[]>([]);
+  const redoStack = useRef<ResumeData[]>([]);
+  const lastEditAt = useRef(0);
+  const COALESCE_MS = 600;
+
   // 不可变更新：克隆当前数据 → 修改 → 写回草稿（首次编辑即自动生成草稿）
   const update = (fn: (d: ResumeData) => void) => {
+    const now = Date.now();
+    if (now - lastEditAt.current > COALESCE_MS) {
+      undoStack.current.push(cloneResume(data));
+      if (undoStack.current.length > 100) undoStack.current.shift();
+    }
+    lastEditAt.current = now;
+    redoStack.current = [];
     const next = cloneResume(data);
     fn(next);
+    setDraft(resumeId, next);
+  };
+
+  const undo = () => {
+    const prev = undoStack.current.pop();
+    if (!prev) return;
+    redoStack.current.push(cloneResume(data));
+    lastEditAt.current = 0;
+    setDraft(resumeId, prev);
+  };
+  const redo = () => {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push(cloneResume(data));
+    lastEditAt.current = 0;
     setDraft(resumeId, next);
   };
 
@@ -364,6 +459,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     else setDraft(resumeId, cloneResume(data));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
+  };
+
+  // 导出 Word：按需加载 docx 构建器（不进入 SSG 预渲染树）
+  const handleExportWord = async () => {
+    const { downloadResumeWord } = await import('./exportWord');
+    await downloadResumeWord(data);
   };
 
   // 拖拽排序：拖动过程中实时把被拖项移动到目标位置
@@ -570,8 +671,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex flex-col">
-      {/* 顶栏 */}
-      <div className="bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      {/* 顶栏：左侧标题；右侧全局设置（模板/配色/排版/智能一页）+ 撤销重做 + 预览 + 操作 */}
+      <div className="bg-white border-b px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-2 min-w-0">
           <Icon name="edit" className="text-blue-600" />
           <span className="font-semibold text-gray-900 truncate">
@@ -583,7 +684,277 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* 全局设置：模板 / 配色 / 排版（下拉面板）+ 智能一页 */}
+          <div className="flex items-center gap-1.5 pr-2 border-r border-gray-200">
+            <ToolbarPopover
+              icon="layer-group"
+              label="模板"
+              title="模板版式"
+              panelClassName="w-44"
+            >
+              {(close) => (
+                <div className="space-y-1">
+                  {TEMPLATE_OPTIONS.map((t) => {
+                    const active = (data.template || 'classic') === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          update((d) => (d.template = t.id as ResumeTemplate));
+                          close();
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          active
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </ToolbarPopover>
+
+            <ToolbarPopover
+              icon="palette"
+              label="配色"
+              title="配色主题"
+              panelClassName="w-40"
+            >
+              {(close) => (
+                <div className="flex flex-wrap gap-2">
+                  {THEME_OPTIONS.map((t) => {
+                    const active = (data.theme || 'blue') === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        title={t.label}
+                        onClick={() => {
+                          update((d) => (d.theme = t.id as ResumeTheme));
+                          close();
+                        }}
+                        className={`w-8 h-8 rounded-full ${t.dot} ring-2 ring-offset-2 transition ${
+                          active
+                            ? 'ring-gray-800'
+                            : 'ring-transparent hover:ring-gray-300'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </ToolbarPopover>
+
+            <ToolbarPopover
+              icon="text-height"
+              label="排版"
+              title="全局排版"
+              panelClassName="w-80 max-h-[70vh] overflow-y-auto"
+            >
+              {() => (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-800">
+                      全局排版
+                    </span>
+                    <button
+                      type="button"
+                      onClick={resetSettings}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-blue-600"
+                    >
+                      <Icon name="redo" />
+                      恢复默认
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <Slider
+                      label="全局字号"
+                      value={settings.fontScale}
+                      min={0.8}
+                      max={1.25}
+                      step={0.05}
+                      display={(v) => `${Math.round(v * 100)}%`}
+                      onChange={(v) => setSetting('fontScale', v)}
+                    />
+                    <Slider
+                      label="行间距"
+                      value={settings.lineHeight}
+                      min={1.2}
+                      max={2}
+                      step={0.05}
+                      display={(v) => v.toFixed(2)}
+                      onChange={(v) => setSetting('lineHeight', v)}
+                    />
+                    <Slider
+                      label="模块间距"
+                      value={settings.blockGap}
+                      min={6}
+                      max={32}
+                      step={1}
+                      display={(v) => `${v}px`}
+                      onChange={(v) => setSetting('blockGap', v)}
+                    />
+                    <Slider
+                      label="页边距"
+                      value={settings.pageMargin}
+                      min={24}
+                      max={72}
+                      step={1}
+                      display={(v) => `${v}px`}
+                      onChange={(v) => setSetting('pageMargin', v)}
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-xs font-medium text-gray-500 mb-1">
+                      正文字体
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {FONT_OPTIONS.map((f) => {
+                        const active =
+                          (settings.fontFamily || 'default') === f.key;
+                        const stack = fontStack(f.key);
+                        return (
+                          <button
+                            key={f.key}
+                            type="button"
+                            onClick={() => setFontFamily(f.key)}
+                            style={stack ? { fontFamily: stack } : undefined}
+                            className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                              active
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {f.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-medium text-gray-500 mb-1">
+                      标题行数
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {HEADER_LINES_OPTIONS.map((o) => {
+                        const active =
+                          (data.settings?.headerLines ?? 2) === o.id;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setHeaderLines(o.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
+                              active
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-medium text-gray-500 mb-1">
+                      字段样式
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {FIELD_SEPARATOR_OPTIONS.map((o) => {
+                        const active =
+                          (data.settings?.fieldSeparator ?? 'dot') === o.id;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            title={
+                              o.id === 'justify'
+                                ? '字段分散对齐：首字段贴左、时间贴右、中间均分（两端对齐）'
+                                : `用「${o.label}」分隔字段`
+                            }
+                            onClick={() => setFieldSeparator(o.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
+                              active
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      控制学校/学院/专业/学位等字段在标题行的排布。
+                    </p>
+                  </div>
+                </div>
+              )}
+            </ToolbarPopover>
+
+            <button
+              type="button"
+              onClick={startSmartFit}
+              disabled={!!autoFit}
+              title="自动压缩排版直到塞进一页"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Icon name="magic" />
+              <span className="hidden lg:inline">
+                {autoFit ? '压缩中…' : '智能一页'}
+              </span>
+            </button>
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              共 {pageCount} 页
+              {fitMsg && (
+                <span className="ml-1 font-medium text-emerald-600">
+                  {fitMsg}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* 撤销 / 重做 */}
+          <div className="flex items-center gap-0.5 pr-2 border-r border-gray-200">
+            <IconBtn
+              icon="undo"
+              onClick={undo}
+              disabled={undoStack.current.length === 0}
+              title="撤销"
+            />
+            <IconBtn
+              icon="redo2"
+              onClick={redo}
+              disabled={redoStack.current.length === 0}
+              title="重做"
+            />
+          </div>
+
+          {/* 预览切换 */}
+          <button
+            type="button"
+            onClick={() => setPreviewMode((p) => !p)}
+            title={previewMode ? '退出预览' : '全屏预览'}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+              previewMode
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Icon name={previewMode ? 'compress' : 'expand'} />
+            <span className="hidden lg:inline">
+              {previewMode ? '退出预览' : '预览'}
+            </span>
+          </button>
+
+          {/* 操作：保存 / 导出（PDF·Word·数据）/ 发布到线上 / 重置 / 关闭 */}
           <button
             onClick={handleSave}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors ${
@@ -593,26 +964,59 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <Icon name={saved ? 'check' : 'save'} />
             <span>{saved ? '已保存' : '保存'}</span>
           </button>
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
+
+          <ToolbarPopover
+            icon="download"
+            label="导出"
+            align="right"
+            title="导出 PDF / Word / 数据"
+            panelClassName="w-48"
           >
-            <Icon name="print" />
-            <span className="hidden sm:inline">导出 PDF</span>
-          </button>
+            {(close) => (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.print();
+                    close();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Icon name="print" className="text-gray-400" />
+                  导出 PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleExportWord();
+                    close();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Icon name="file-alt" className="text-gray-400" />
+                  导出 Word
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadResumeYaml(data);
+                    close();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Icon name="download" className="text-gray-400" />
+                  导出数据（YAML）
+                </button>
+              </div>
+            )}
+          </ToolbarPopover>
+
           <button
             onClick={() => setPublishOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
           >
             <Icon name="paper-plane" />
             <span className="hidden sm:inline">发布到线上</span>
-          </button>
-          <button
-            onClick={() => downloadResumeYaml(data)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
-          >
-            <Icon name="download" />
-            <span className="hidden sm:inline">导出数据</span>
           </button>
           {dirty && (
             <button
@@ -635,9 +1039,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
 
       {/* 双栏主体：表单左、预览右。md(768px) 起即左右布局——
           编辑器是全屏覆盖层，用户预期始终是超级简历式左右双栏，
-          仅窄于 768px（手机）才退化为上下堆叠 */}
+          仅窄于 768px（手机）才退化为上下堆叠。预览模式下隐藏左侧表单、预览占满。 */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2">
-        {/* 左：表单 */}
+        {/* 左：表单（预览模式下隐藏） */}
+        {!previewMode && (
         <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
           {/* 简历诊断：完成度 + 智能检查 */}
           <DiagnosticsPanel data={data} onFix={(fix) => update(fix)} />
@@ -657,218 +1062,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 onChange={(v) => update((d) => (d.target = v))}
               />
             </div>
-
-            {/* 模板 */}
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1.5">
-                模板版式
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {TEMPLATE_OPTIONS.map((t) => {
-                  const active = (data.template || 'classic') === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() =>
-                        update((d) => (d.template = t.id as ResumeTemplate))
-                      }
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                        active
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 配色 */}
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1.5">
-                配色主题
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {THEME_OPTIONS.map((t) => {
-                  const active = (data.theme || 'blue') === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      title={t.label}
-                      onClick={() =>
-                        update((d) => (d.theme = t.id as ResumeTheme))
-                      }
-                      className={`w-8 h-8 rounded-full ${t.dot} ring-2 ring-offset-2 transition ${
-                        active ? 'ring-gray-800' : 'ring-transparent'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* 全局排版设置 */}
-          <section>
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-                <Icon name="cog" className="text-blue-600" />
-                全局排版
-              </h3>
-              <button
-                type="button"
-                onClick={resetSettings}
-                className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-blue-600"
-              >
-                <Icon name="redo" />
-                恢复默认
-              </button>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-              <Slider
-                label="全局字号"
-                value={settings.fontScale}
-                min={0.8}
-                max={1.25}
-                step={0.05}
-                display={(v) => `${Math.round(v * 100)}%`}
-                onChange={(v) => setSetting('fontScale', v)}
-              />
-              <Slider
-                label="行间距"
-                value={settings.lineHeight}
-                min={1.2}
-                max={2}
-                step={0.05}
-                display={(v) => v.toFixed(2)}
-                onChange={(v) => setSetting('lineHeight', v)}
-              />
-              <Slider
-                label="模块间距"
-                value={settings.blockGap}
-                min={6}
-                max={32}
-                step={1}
-                display={(v) => `${v}px`}
-                onChange={(v) => setSetting('blockGap', v)}
-              />
-              <Slider
-                label="页边距"
-                value={settings.pageMargin}
-                min={24}
-                max={72}
-                step={1}
-                display={(v) => `${v}px`}
-                onChange={(v) => setSetting('pageMargin', v)}
-              />
-            </div>
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1">
-                正文字体
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {FONT_OPTIONS.map((f) => {
-                  const active = (settings.fontFamily || 'default') === f.key;
-                  const stack = fontStack(f.key);
-                  return (
-                    <button
-                      key={f.key}
-                      type="button"
-                      onClick={() => setFontFamily(f.key)}
-                      style={stack ? { fontFamily: stack } : undefined}
-                      className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-                        active
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1">
-                标题行数
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {HEADER_LINES_OPTIONS.map((o) => {
-                  const active = (data.settings?.headerLines ?? 2) === o.id;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => setHeaderLines(o.id)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                        active
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1">
-                字段样式
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {FIELD_SEPARATOR_OPTIONS.map((o) => {
-                  const active =
-                    (data.settings?.fieldSeparator ?? 'dot') === o.id;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      title={
-                        o.id === 'justify'
-                          ? '字段分散对齐：首字段贴左、时间贴右、中间均分（两端对齐）'
-                          : `用「${o.label}」分隔字段`
-                      }
-                      onClick={() => setFieldSeparator(o.id)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                        active
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-1 text-[11px] text-gray-400">
-                控制学校/学院/专业/学位等字段在标题行的排布。「分散对齐」无分隔符、两端对齐；其余用对应符号连接。
-              </p>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <button
-                type="button"
-                onClick={startSmartFit}
-                disabled={!!autoFit}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Icon name="magic" />
-                {autoFit ? '压缩中…' : '智能一页'}
-              </button>
-              <span className="text-xs text-gray-500">共 {pageCount} 页</span>
-              {fitMsg && (
-                <span className="text-xs font-medium text-emerald-600">
-                  {fitMsg}
-                </span>
-              )}
-            </div>
-            <p className="mt-2 text-[11px] text-gray-400">
-              作用于整份简历（预览与导出 PDF 同步生效）。
-            </p>
           </section>
 
           {/* 模块管理：顺序 / 改名 / 显隐 */}
@@ -1910,9 +2103,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             YAML 提交到 content/resumes/。
           </p>
         </div>
+        )}
 
-        {/* 右：实时预览（真·多页）*/}
-        <div className="overflow-auto bg-gray-100 p-4 sm:p-8">
+        {/* 右：实时预览（真·多页）；预览模式下占满整行 */}
+        <div
+          className={`overflow-auto bg-gray-100 p-4 sm:p-8 ${
+            previewMode ? 'md:col-span-2' : ''
+          }`}
+        >
           <ResumeDocument data={data} onPages={handlePages} />
         </div>
       </div>
