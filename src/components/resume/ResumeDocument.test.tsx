@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ResumeDocument from './ResumeDocument';
 import {
@@ -34,7 +34,7 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/做了 X/).length).toBeGreaterThan(0);
   });
 
-  it('aligns entry headers: name left, role center, period right', () => {
+  it('aligns entry headers (default 双行): line1 title left + period right, line2 fields', () => {
     render(
       <ResumeDocument
         data={{
@@ -54,23 +54,107 @@ describe('ResumeDocument', () => {
         id="resume-print"
       />,
     );
-    for (const [name, role, period] of [
-      ['S1', '计算机学院', '2021 - 2025'],
-      ['ACME', '开发', '2025 - 至今'],
-      ['P1', '负责人', '2026'],
+    for (const [name, period] of [
+      ['S1', '2021 - 2025'],
+      ['ACME', '2025 - 至今'],
+      ['P1', '2026'],
     ] as const) {
-      const row = screen.getAllByText(name)[0].closest('.grid') as HTMLElement;
-      expect(row.className).toContain('grid-cols-[1fr_auto_1fr]');
+      // 第一行：flex 两端对齐，主标题贴左、时间贴右
+      const row = screen
+        .getAllByText(name)[0]
+        .closest('.justify-between') as HTMLElement;
+      expect(row).not.toBeNull();
+      expect(row.className).toContain('flex');
       const cells = Array.from(row.children) as HTMLElement[];
-      expect(cells).toHaveLength(3);
+      expect(cells).toHaveLength(2);
       expect(cells[0].textContent).toBe(name);
-      expect(cells[1].textContent).toBe(role);
-      expect(cells[1].className).toContain('text-center');
-      expect(cells[2].textContent).toBe(period);
-      expect(cells[2].className).toContain('text-right');
+      expect(cells[1].textContent).toBe(period);
+      expect(cells[1].className).toContain('text-right');
     }
-    // 学历·专业·GPA 仍在标题行下方
-    expect(screen.getAllByText('本科 · CS').length).toBeGreaterThan(0);
+    // 第二行：其余字段以「 · 」连接
+    expect(screen.getAllByText('计算机学院 · 本科 · CS').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('开发').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('负责人').length).toBeGreaterThan(0);
+  });
+
+  it('entry header single line: fields joined by separator on the left, period right', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          settings: { headerLines: 1, fieldSeparator: 'dot' },
+          education: [
+            {
+              school: 'S1',
+              college: '计算机学院',
+              degree: '本科',
+              major: 'CS',
+              period: '2021 - 2025',
+            },
+          ],
+        }}
+        id="resume-print"
+      />,
+    );
+    const h3 = screen.getAllByText(/^S1/)[0] as HTMLElement;
+    expect(h3.tagName).toBe('H3');
+    expect(h3.textContent).toBe('S1 · 计算机学院 · 本科 · CS');
+    const row = h3.closest('.justify-between') as HTMLElement;
+    const cells = Array.from(row.children) as HTMLElement[];
+    expect(cells).toHaveLength(2);
+    expect(cells[1].textContent).toBe('2021 - 2025');
+  });
+
+  it('entry header single line + justify: title, fields and period spread across one row', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          settings: { headerLines: 1, fieldSeparator: 'justify' },
+          education: [
+            {
+              school: 'S1',
+              college: '计算机学院',
+              degree: '本科',
+              major: 'CS',
+              period: '2021 - 2025',
+            },
+          ],
+        }}
+        id="resume-print"
+      />,
+    );
+    const row = screen
+      .getAllByText('S1')[0]
+      .closest('.justify-between') as HTMLElement;
+    expect(row.className).toContain('justify-between');
+    const cells = Array.from(row.children) as HTMLElement[];
+    // 标题 + 3 个字段(学院/学位/专业) + 时间 = 5 个 flex 子项，两端对齐
+    expect(cells).toHaveLength(5);
+    expect(cells[0].textContent).toBe('S1');
+    expect(cells[1].textContent).toBe('计算机学院');
+    expect(cells[2].textContent).toBe('本科');
+    expect(cells[3].textContent).toBe('CS');
+    expect(cells[4].textContent).toBe('2021 - 2025');
+  });
+
+  it('renders the card template: colored header card, white content cards, gray sheet', () => {
+    const { container } = render(
+      <ResumeDocument data={{ ...base, template: 'card' }} id="resume-print" />,
+    );
+    const root = container.querySelector('#resume-print') as HTMLElement;
+    expect(root.classList.contains('resume-color-exact')).toBe(true);
+    expect(root.classList.contains('bg-slate-100')).toBe(true);
+    // 主题色头部卡片（默认 blue 主题）
+    expect(container.querySelectorAll('header.bg-blue-800').length).toBeGreaterThan(0);
+    // 其余模块包在白色圆角卡片里
+    expect(container.querySelectorAll('.bg-white.rounded-xl.border').length).toBeGreaterThan(0);
+  });
+
+  it('reports page count via onPages (智能一页)', () => {
+    const onPages = vi.fn();
+    render(<ResumeDocument data={base} onPages={onPages} />);
+    expect(onPages).toHaveBeenCalledWith(1);
   });
 
   it('sets id on the print document (print target)', () => {
