@@ -28,6 +28,13 @@
 }
 
 @layer components {
+  /* typography 插件只为内置色板生成 prose-<color> 修饰类，sage 是自定义色，
+     这里按插件同款写法（只覆盖链接色）手工补一个 prose-sage */
+  .prose-sage {
+    --tw-prose-links: #4a614a; /* sage-600 */
+    --tw-prose-invert-links: #5f7a5f; /* sage-500 */
+  }
+
   .glass-effect {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20px);

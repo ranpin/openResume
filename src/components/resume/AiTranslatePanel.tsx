@@ -19,12 +19,15 @@ interface AiTranslatePanelProps {
   resumeId: string;
   baseData: ResumeData;
   onClose: () => void;
+  /** 翻译成功并写入新草稿后触发（区别于取消）；缺省回落到 onClose */
+  onTranslated?: () => void;
 }
 
 const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
   resumeId,
   baseData,
   onClose,
+  onTranslated,
 }) => {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(AI_MODELS[0].id);
@@ -80,7 +83,8 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
         settings: result.settings || baseData.settings,
       });
       setActiveId(newId);
-      onClose();
+      // 成功区别于取消：优先走 onTranslated（父组件可借此关掉编辑器回到查看器）
+      (onTranslated ?? onClose)();
     } catch (e) {
       setError(e instanceof Error ? e.message : '翻译失败，请重试');
     } finally {
