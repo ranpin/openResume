@@ -32,7 +32,7 @@ const FULL: ResumeData = {
     },
   ],
   projects: [{ name: '开源项目', role: '作者', period: '2020', tech: ['Vite'], highlights: ['star 1k+'], link: 'https://github.com/x/y' }],
-  skills: [{ category: '前端', items: ['React', 'Vue'], levels: { React: '精通', Vue: '熟悉' } }],
+  skills: '**前端**：React（精通）、Vue（熟悉）',
   awards: [{ title: '优秀员工', issuer: '某公司', date: '2022' }],
   certificates: [{ name: 'AWS 认证', issuer: 'Amazon', date: '2021' }],
   languages: [{ name: '英语', level: 'CET-6' }],

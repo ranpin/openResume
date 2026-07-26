@@ -6,7 +6,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  */
 
 // A4 @96dpi：794 × 1123
-const PAGE_W = 794;
+export const PAGE_W = 794;
 const PAGE_H = 1123;
 const DEFAULT_PAD = 45;
 
@@ -21,7 +21,6 @@ interface PaginatorProps {
   pad?: number; // A4 页边距(px)，随全局排版设置变化
   rootStyle?: React.CSSProperties; // 排版 CSS 变量，下发到测量层与页面（须一致以保证测高准确）
   dense?: boolean; // compact 模板
-  sheetBg?: string; // 页面底色类名，默认 bg-white；卡片模板用灰底
   onPages?: (count: number) => void; // 分页页数变化回调（智能一页用）
 }
 
@@ -31,7 +30,6 @@ const Paginator: React.FC<PaginatorProps> = ({
   pad = DEFAULT_PAD,
   rootStyle,
   dense,
-  sheetBg = 'bg-white',
   onPages,
 }) => {
   const CONTENT_W = PAGE_W - pad * 2;
@@ -109,7 +107,7 @@ const Paginator: React.FC<PaginatorProps> = ({
       {pages.map((idxs, p) => (
         <div
           key={p}
-          className={`resume-sheet ${sheetBg} shadow-lg relative shrink-0`}
+          className="resume-sheet bg-white shadow-lg relative shrink-0"
           style={{ width: PAGE_W, minHeight: PAGE_H, padding: pad }}
         >
           {idxs.map((i) => {

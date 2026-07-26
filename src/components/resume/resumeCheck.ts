@@ -44,7 +44,7 @@ export function runChecks(d: ResumeData): CheckIssue[] {
   const edu = d.education || [];
   const work = d.work || [];
   const projects = d.projects || [];
-  const skills = d.skills || [];
+  const skills = stripMd(d.skills || '');
   const awards = d.awards || [];
   const certs = d.certificates || [];
   const issues: CheckIssue[] = [];
@@ -229,20 +229,12 @@ export function runChecks(d: ResumeData): CheckIssue[] {
   }
 
   // —— 技能 ——
-  if (skills.length === 0 || !skills.some((s) => (s.items || []).some(has))) {
+  if (!skills) {
     issues.push({
       id: 'no-skills',
       severity: 'warn',
       title: '缺少专业技能',
       detail: '列出核心技能，让 HR 快速判断匹配度。',
-      sectionKey: 'skills',
-    });
-  } else if (skills.every((s) => !s.levels || Object.keys(s.levels).length === 0)) {
-    issues.push({
-      id: 'skill-no-level',
-      severity: 'info',
-      title: '技能未标注熟练度',
-      detail: '给技能标注了解/熟悉/掌握/精通，画像更清晰。',
       sectionKey: 'skills',
     });
   }

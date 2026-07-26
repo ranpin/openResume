@@ -13,7 +13,7 @@ const resume: ResumeData = {
       highlights: ['用 React + TypeScript 重构核心页面', '落地 Vite 构建，提速 5 倍'],
     },
   ],
-  skills: [{ category: '前端', items: ['React', 'TypeScript', 'Vite', 'CSS'] }],
+  skills: '**前端**：React、TypeScript、Vite、CSS',
 };
 
 describe('matchJd', () => {

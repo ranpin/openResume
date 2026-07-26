@@ -150,10 +150,7 @@ function resumeText(d: ResumeData): string {
   (d.projects || []).forEach((p) =>
     parts.push(p.name, ...(p.tech || []), ...(p.highlights || [])),
   );
-  (d.skills || []).forEach((s) => {
-    parts.push(s.category, ...(s.items || []));
-    parts.push(...Object.keys(s.levels || {}));
-  });
+  parts.push(d.skills);
   (d.awards || []).forEach((a) => parts.push(a.title));
   (d.certificates || []).forEach((c) => parts.push(c.name));
   (d.languages || []).forEach((l) => parts.push(l.name, l.level));

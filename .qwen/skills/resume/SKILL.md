@@ -23,9 +23,9 @@ npx vitest run             # 11 个测试文件，渲染测试用 @testing-libra
 
 全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
 
-- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」三个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭）→「智能一页」+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「发布到线上」→「重置」（dirty 时）→「关闭」。
+- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除自定义模块）→「智能一页」+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「发布到线上」→「重置」（dirty 时）→「关闭」。
 - 撤销/重做：单一入口 `update(fn)`——600ms 时间窗合并（连续输入/拖拽/智能一页多步各算一个撤销点），undoStack/redoStack 为 ref（上限 100），按钮 disabled 直接读 ref（靠 setDraft 触发重渲染）。**新增任何改动数据的路径必须走 `update`**，否则破坏撤销栈。
-- 刻意未做预览缩放：任何 transform/scale 容器都会包住 `#resume-print` 影响打印导出，而打印无法用 Playwright 验证。
+- 预览缩放必须打印安全：`PreviewFit.tsx` 包住预览面板（编辑器 + 查看器），ResizeObserver 算 `scale = min(1, 可用宽 / 794)`，经 CSS 变量 `--preview-fit` / `--preview-fit-h` + transform 缩放；`resume.css` 里相关样式只在 `@media screen` 生效，`@media print` 下 `!important` 复位原尺寸——「导出 PDF」是 window.print()，会打印预览容器内的文档，缩放绝不能带进打印。不要把这套缩放改成内联样式或套到打印链路。
 
 ## 渲染架构（最重要的不变量）
 
@@ -57,7 +57,7 @@ Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上
 
 ## 模板
 
-`template: classic | compact | card | sidebar`（`types/resume.ts`），选项表在 `resumeTheme.ts`。card = `buildCardBlocks`：复用 `buildBlocks`，头部换主题色 `CardHeader`，其余块包白色圆角卡片，页面灰底（`CARD_SHEET_BG`，打印文档同灰底 + `resume-color-exact`）。新增页面底色需求走 Paginator 的 `sheetBg` prop。
+`template: classic | compact | card | sidebar`（`types/resume.ts`），选项表在 `resumeTheme.ts`。card = `buildCardBlocks`：复用 `buildBlocks`，整体扁平白底（打印根与屏幕 sheet 均 `bg-white`，无彩色大横幅），只把每个非头部块包进 `rounded-xl border bg-white shadow-sm` 小卡片。sheet 恒白底（`resume-sheet bg-white`），没有页面底色 prop。
 
 ## 已踩过的坑
 
@@ -65,6 +65,8 @@ Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上
 - 图标用 `components/Icon.tsx`（lucide 封装，fa 风格 name）；新图标名先查 `ICON_MAP`，没有就在 map 里加。
 - 测试断言 DOM 结构时注意：内容会同时出现在打印文档 + 测量层 + 可见 sheet，用 `getAllByText(...)[0]` / `closest()`。
 - 富文本存受限 `<span class>`，Markdown 渲染见 RichText 组件；`exportWord` 有独立测试。
+- `skills` 是 Markdown 富文本字符串（同 `summary`），不是数组：旧版分组数组数据由 `migrateResume()`（`resumeIo.ts`）在四个入口兜底转换（content.ts 加载、编辑器/查看器数据派生、AI generate/parse/translate 返回）。新写技能相关代码不要假设数组。
+- 兴趣爱好与校园活动/资格证书一致：编辑框默认隐藏，点分区「添加」才出现；标签清空后自动重新隐藏（`interestsOpen` state）。
 
 ## 部署
 

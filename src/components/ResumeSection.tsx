@@ -1,8 +1,9 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import Icon from './Icon';
 import ResumeCatalog from './ResumeCatalog';
 import ResumeDocument from './resume/ResumeDocument';
-import { downloadResumeYaml, normalizeResume } from './resume/resumeIo';
+import PreviewFit from './resume/PreviewFit';
+import { downloadResumeYaml, migrateResume, normalizeResume } from './resume/resumeIo';
 import { resumes } from '../data/content';
 import { useResumeStore } from '../store/useResumeStore';
 import type { Project, Publication, Internship } from '../types';
@@ -83,9 +84,14 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
     ? activeId
     : allResumes[0]?.id;
   const published = resumes.find((r) => r.id === selectedId);
-  // 有草稿则展示草稿（水合后），否则展示已发布版本
-  const current: ResumeData | undefined =
+  // 有草稿则展示草稿（水合后），否则展示已发布版本；
+  // 旧草稿可能还是 skills 分组数组的旧结构，读出时统一迁移为富文本字符串
+  const rawCurrent: ResumeData | undefined =
     (selectedId && drafts[selectedId]) || published;
+  const current: ResumeData | undefined = useMemo(
+    () => (rawCurrent ? migrateResume(rawCurrent) : rawCurrent),
+    [rawCurrent],
+  );
 
   // 「有未发布改动」= 存在草稿，且与内置基线、最近一次发布都不同
   const isDirty = (rid: string): boolean => {
@@ -248,11 +254,12 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             </div>
           )}
 
-          {/* A4 预览（真·多页；打印时单独输出为 PDF） */}
+          {/* A4 预览（真·多页；打印时单独输出为 PDF）。
+              PreviewFit：可用宽度不足一页 A4 时等比缩小，小屏也不被裁切。 */}
           {current && (
-            <div className="rounded-2xl border border-gray-200 shadow-sm overflow-auto bg-gray-100 p-4 sm:p-8">
+            <PreviewFit className="rounded-2xl border border-gray-200 shadow-sm overflow-auto bg-gray-100 p-4 sm:p-8">
               <ResumeDocument id="resume-print" data={current} />
-            </div>
+            </PreviewFit>
           )}
         </div>
       )}

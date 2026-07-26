@@ -5,6 +5,7 @@
 import { load as parseYaml } from 'js-yaml';
 import type { Project, Publication, Internship, Honor } from '../types';
 import type { ResumeData } from '../types/resume';
+import { migrateResume } from '../components/resume/resumeIo';
 
 // 注意：import.meta.glob 的第二个参数必须是内联对象字面量（Vite 静态分析要求）。
 
@@ -55,11 +56,12 @@ export const projects: Project[] = loadMany<Project>(
 
 export const publications: Publication[] = [];
 
-// 简历文档：每个 YAML 一份简历，文件名（去扩展名）作为稳定 id，按文件名升序
+// 简历文档：每个 YAML 一份简历，文件名（去扩展名）作为稳定 id，按文件名升序。
+// 载入时经 migrateResume 迁移旧格式字段（如 skills 分组数组 → 富文本）。
 export const resumes: ResumeData[] = loadMany<ResumeData>(
   import.meta.glob('/content/resumes/*.yaml', {
     eager: true,
     query: '?raw',
     import: 'default',
   }) as RawGlob,
-).map(([path, v]) => ({ ...v, id: slugOf(path) }));
+).map(([path, v]) => migrateResume({ ...v, id: slugOf(path) }));

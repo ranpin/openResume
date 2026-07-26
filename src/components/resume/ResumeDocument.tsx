@@ -11,7 +11,6 @@ import type {
   ResumeEducation,
   ResumeWork,
   ResumeProject,
-  ResumeSkill,
   ResumeAward,
   ResumeCertificate,
   ResumeLanguage,
@@ -91,8 +90,7 @@ const ContactList: React.FC<{
   basics: ResumeBasics;
   onDark?: boolean;
   align?: 'center' | 'left';
-  horizontal?: boolean; // 深色底色下也横排（卡片模板头部用）
-}> = ({ basics, onDark, align = 'center', horizontal }) => {
+}> = ({ basics, onDark, align = 'center' }) => {
   const items: { icon: string; text: string; href?: string }[] = [];
   if (basics.email)
     items.push({
@@ -120,11 +118,7 @@ const ContactList: React.FC<{
     <div
       className={
         onDark
-          ? horizontal
-            ? `rs-meta flex flex-wrap items-center gap-x-4 gap-y-1 text-white/90 ${
-                align === 'left' ? 'justify-start' : 'justify-center'
-              }`
-            : 'rs-meta flex flex-col gap-1.5 text-white/90'
+          ? 'rs-meta flex flex-col gap-1.5 text-white/90'
           : `rs-body flex flex-wrap items-center gap-x-5 gap-y-1 ${
               align === 'left' ? 'justify-start' : 'justify-center'
             }`
@@ -343,73 +337,17 @@ const WorkEntry: React.FC<{ w: ResumeWork }> = ({ w }) => (
   </div>
 );
 
-const SKILL_LEVELS = ['了解', '熟悉', '掌握', '精通'];
-
-// 技能熟练度圆点：了解=1 … 精通=4；未知级别不渲染
-const LevelDots: React.FC<{ level: string; onDark?: boolean }> = ({
-  level,
-  onDark,
-}) => {
-  const n = SKILL_LEVELS.indexOf(level) + 1;
-  if (n <= 0) return null;
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 ml-1.5 align-middle"
-      title={level}
-    >
-      {[0, 1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={`resume-color-exact inline-block w-1.5 h-1.5 rounded-full ${
-            i < n
-              ? onDark
-                ? 'bg-white'
-                : 'bg-gray-700'
-              : onDark
-                ? 'bg-white/25'
-                : 'bg-gray-300'
-          }`}
-        />
-      ))}
-    </span>
-  );
-};
-
 const SkillsBlock: React.FC<{
-  items: ResumeSkill[];
+  skills: string;
   theme: ThemeClasses;
   title: string;
   onDark?: boolean;
-}> = ({ items, theme, title, onDark }) => (
-  <section>
+}> = ({ skills, theme, title, onDark }) => (
+  <section className="resume-block">
     <SectionTitle icon="cogs" theme={theme} onDark={onDark}>
       {title}
     </SectionTitle>
-    <div className="space-y-1.5">
-      {items.map((s, i) => (
-        <div
-          key={i}
-          className={`resume-block rs-body ${
-            onDark ? 'text-white/90' : 'text-gray-700'
-          }`}
-        >
-          {s.category && (
-            <span
-              className={`font-semibold ${onDark ? 'text-white' : 'text-gray-900'}`}
-            >
-              {s.category}：
-            </span>
-          )}
-          {clean(s.items).map((it, idx, arr) => (
-            <span key={it} className="inline-flex items-center">
-              {it}
-              {s.levels?.[it] && <LevelDots level={s.levels[it]} onDark={onDark} />}
-              {idx < arr.length - 1 && <span>、</span>}
-            </span>
-          ))}
-        </div>
-      ))}
-    </div>
+    <RichText className={onDark ? 'resume-rt-on-dark' : ''}>{skills}</RichText>
   </section>
 );
 
@@ -606,32 +544,6 @@ const SingleHeader: React.FC<{
   );
 };
 
-// 卡片模板头部：主题色圆角卡片，白字，联系方式横排
-const CardHeader: React.FC<{
-  basics: ResumeBasics;
-  theme: ThemeClasses;
-}> = ({ basics, theme }) => {
-  const hasPhoto = !!basics.photo;
-  return (
-    <header
-      className={`resume-color-exact resume-block rounded-xl px-6 py-5 text-white ${
-        theme.sidebarBg
-      } ${hasPhoto ? 'flex items-center gap-5' : ''}`}
-    >
-      <div className={hasPhoto ? 'flex-1 min-w-0' : ''}>
-        <h1 className="rs-name font-bold">{basics.name}</h1>
-        {basics.title && (
-          <p className="rs-title mt-1 text-white/85">{basics.title}</p>
-        )}
-        <div className="mt-3">
-          <ContactList basics={basics} onDark horizontal align="left" />
-        </div>
-      </div>
-      {hasPhoto && <PhotoBox src={basics.photo} onDark />}
-    </header>
-  );
-};
-
 // --- 单栏：按模块配置构建可分页的内容块 ---
 
 const buildBlocks = (
@@ -702,11 +614,11 @@ const buildBlocks = (
         ));
         break;
       case 'skills':
-        if (data.skills && data.skills.length > 0)
+        if (data.skills && data.skills.trim())
           blocks.push({
             key: 'skills',
             node: (
-              <SkillsBlock items={data.skills} theme={theme} title={sec.title} />
+              <SkillsBlock skills={data.skills} theme={theme} title={sec.title} />
             ),
           });
         break;
@@ -789,25 +701,23 @@ const buildBlocks = (
   return blocks;
 };
 
-// --- 卡片风格模板：灰底页面 + 主题色头部卡片 + 各内容块白色圆角卡片 ---
-// 复用 buildBlocks 的内容块：替换头部为彩色卡片，其余每块包一层白色卡片。
-const CARD_SHEET_BG = 'bg-slate-100';
-
+// --- 卡片风格模板：页面整体扁平（白底、头部与经典版一致），仅各模块内容包一层圆角卡片 ---
 const buildCardBlocks = (
   data: ResumeData,
   theme: ThemeClasses,
   sections: ResolvedSection[],
 ): Block[] => {
   const inner = buildBlocks(data, theme, sections);
-  const blocks: Block[] = [
-    { key: 'header', node: <CardHeader basics={data.basics} theme={theme} /> },
-  ];
+  const blocks: Block[] = [];
   for (const b of inner) {
-    if (b.key === 'header') continue;
+    if (b.key === 'header') {
+      blocks.push(b);
+      continue;
+    }
     blocks.push({
       key: b.key,
       node: (
-        <div className="resume-color-exact bg-white rounded-xl border border-slate-200/80 shadow-sm px-4 py-3">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
           {b.node}
         </div>
       ),
@@ -944,10 +854,10 @@ const SidebarLayout: React.FC<{
         {asideKeys.map((sec) => {
           switch (sec.key) {
             case 'skills':
-              return data.skills && data.skills.length > 0 ? (
+              return data.skills && data.skills.trim() ? (
                 <div key="skills" className="mb-6">
                   <SkillsBlock
-                    items={data.skills}
+                    skills={data.skills}
                     theme={theme}
                     title={sec.title}
                     onDark
@@ -1049,8 +959,6 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
     ? buildCardBlocks(data, theme, sections)
     : buildBlocks(data, theme, sections);
   const signature = JSON.stringify(data);
-  // 卡片模板灰底页面：屏幕 sheet 与打印连续文档同灰底，并强制打印背景色
-  const sheetBg = isCard ? CARD_SHEET_BG : 'bg-white';
 
   return (
     <EntryLayoutContext.Provider value={entryLayout}>
@@ -1061,9 +969,7 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
           style={{ ...style, padding: pageMargin }}
           className={`resume-root${
             dense ? ' dense' : ''
-          } resume-print-only ${sheetBg} text-gray-800 mx-auto w-full max-w-[820px]${
-            isCard ? ' resume-color-exact' : ''
-          }`}
+          } resume-print-only bg-white text-gray-800 mx-auto w-full max-w-[820px]`}
         >
           {blocks.map((b) => (
             <div key={b.key} className="rt-pageblock">
@@ -1079,7 +985,6 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
           pad={pageMargin}
           rootStyle={style}
           dense={dense}
-          sheetBg={sheetBg}
           onPages={onPages}
         />
       </div>
