@@ -93,7 +93,7 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden my-8">
         <div className="sticky top-0 bg-white border-b p-5 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Icon name="language" className="text-blue-500" />
+            <Icon name="language" className="text-sage-500" />
             翻译成英文版
           </h2>
           <button
@@ -106,9 +106,9 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
         </div>
 
         <div className="p-6 space-y-5">
-          <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-100 p-4">
-            <Icon name="lightbulb" className="text-blue-500 mt-0.5" />
-            <p className="text-sm text-blue-900/80 leading-relaxed">
+          <div className="flex items-start gap-3 rounded-xl bg-sage-50 border border-sage-100 p-4">
+            <Icon name="lightbulb" className="text-sage-500 mt-0.5" />
+            <p className="text-sm text-sage-900/80 leading-relaxed">
               把「
               <span className="font-medium">{baseData.label}</span>
               」整体翻译成英文，生成一份
@@ -138,7 +138,7 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
               onChange={(e) => saveKey(e.target.value)}
               placeholder="sk-ant-..."
               autoComplete="off"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
             />
             <p className="mt-1 text-xs text-gray-400 leading-relaxed">
               密钥仅保存在你本地浏览器、直连 Anthropic，不会上传服务器或进入仓库。仅供你本人使用。
@@ -153,7 +153,7 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
             >
               {AI_MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -182,7 +182,7 @@ const AiTranslatePanel: React.FC<AiTranslatePanelProps> = ({
               disabled={!canTranslate}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 canTranslate
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-sage-600 text-white hover:bg-sage-700'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

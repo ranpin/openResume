@@ -28,8 +28,8 @@ const TYPE_INFO: Record<
 > = {
   project: {
     icon: 'code',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
+    color: 'text-sage-600',
+    bg: 'bg-sage-50',
     name: '项目',
   },
   publication: {
@@ -40,8 +40,8 @@ const TYPE_INFO: Record<
   },
   internship: {
     icon: 'briefcase',
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
     name: '经历',
   },
 };
@@ -161,7 +161,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
             <div
               key={`${type}-${data.id}-${index}`}
               onClick={() => onItemClick(item, type)}
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-blue-300 group"
+              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-sage-300 group"
             >
               <div className="flex items-start space-x-4 mb-4">
                 <div
@@ -180,7 +180,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
                       {reason}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-sage-600 transition-colors line-clamp-2 text-sm">
                     {asString(data.title || data.position || data.award)}
                   </h4>
                 </div>

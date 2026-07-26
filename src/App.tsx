@@ -36,12 +36,12 @@ const App = () => {
         <header className="bg-white shadow-sm border-b sticky top-0 z-40">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-gray-900">
-              <Icon name="file-alt" className="text-blue-600" />
+              <Icon name="file-alt" className="text-sage-600" />
               简历中心
             </div>
             <a
               href={MAIN_SITE}
-              className="text-sm text-gray-600 hover:text-blue-600 inline-flex items-center gap-1.5"
+              className="text-sm text-gray-600 hover:text-sage-600 inline-flex items-center gap-1.5"
             >
               <Icon name="home" />
               返回主站
@@ -62,7 +62,7 @@ const App = () => {
       {!embedded && (
         <footer className="border-t bg-white py-6 text-center text-sm text-gray-400">
           © Ranpin · 简历中心 ·{' '}
-          <a href={MAIN_SITE} className="hover:text-blue-600">
+          <a href={MAIN_SITE} className="hover:text-sage-600">
             ranpin.github.io
           </a>
         </footer>

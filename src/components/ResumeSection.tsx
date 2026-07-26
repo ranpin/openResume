@@ -34,7 +34,7 @@ const ToolbarButton: React.FC<{
     onClick={onClick}
     className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
       primary
-        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+        ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
         : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
     }`}
   >
@@ -117,7 +117,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             onClick={() => setView(t.key)}
             className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${
               view === t.key
-                ? 'bg-white text-blue-700 shadow-sm'
+                ? 'bg-white text-sage-700 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -152,7 +152,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
                   onClick={() => setActiveId(r.id)}
                   className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base flex items-center ${
                     active
-                      ? 'bg-blue-600 text-white shadow-lg'
+                      ? 'bg-sage-600 text-white shadow-lg'
                       : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm'
                   }`}
                 >

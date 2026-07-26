@@ -78,7 +78,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden my-8">
         <div className="border-b p-5 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Icon name="paper-plane" className="text-blue-600" />
+            <Icon name="paper-plane" className="text-sage-600" />
             发布到线上
           </h2>
           <button
@@ -105,14 +105,14 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
                   href={doneUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1"
+                  className="text-sm text-sage-600 hover:underline inline-flex items-center gap-1"
                 >
                   <Icon name="external-link-alt" />
                   查看提交 / 部署
                 </a>
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-sage-600 text-white hover:bg-sage-700"
                 >
                   完成
                 </button>
@@ -120,9 +120,9 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
             </div>
           ) : (
             <>
-              <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-100 p-4">
-                <Icon name="lightbulb" className="text-blue-500 mt-0.5" />
-                <p className="text-sm text-blue-900/80 leading-relaxed">
+              <div className="flex items-start gap-3 rounded-xl bg-sage-50 border border-sage-100 p-4">
+                <Icon name="lightbulb" className="text-sage-500 mt-0.5" />
+                <p className="text-sm text-sage-900/80 leading-relaxed">
                   将「<span className="font-medium">{data.label}</span>
                   」提交到 <code>content/resumes/{resumeId}.yaml</code>
                   ，自动部署到线上——免手动提交。
@@ -149,7 +149,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
                   onChange={(e) => saveToken(e.target.value)}
                   placeholder="github_pat_... 或 ghp_..."
                   autoComplete="off"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
                 />
                 <p className="mt-1 text-xs text-gray-400 leading-relaxed">
                   需要对本仓库的 <strong>Contents 读写</strong>权限（fine-grained
@@ -177,7 +177,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
                   disabled={!token.trim() || loading}
                   className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     token.trim() && !loading
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      ? 'bg-sage-600 text-white hover:bg-sage-700'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >

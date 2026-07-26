@@ -7,6 +7,10 @@ description: 在 ranpin/resume 仓库（简历中心 SPA）里做开发、改模
 
 简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/resume/（`base: '/resume/'` 是项目页必需，勿改）。内容驱动：`content/` 下的 YAML（简历见 `content/resumes/README.md`）。
 
+## 主色（与主站一致）
+
+应用外壳主色 = 主站的 **sage** 色板（`tailwind.config.js` 已定义）：`sage-600 #4a614a` 主动作色、`sage-500` 图标/渐变（`from-sage-500 to-sage-600`）、`sage-100/700` 标签。**外壳一律 sage，勿用回默认 blue**。刻意保留蓝色的文档层（勿改）：`resumeTheme.ts` 五套简历配色、`ResumeDocument.tsx` 文档内链接色、`resume.css` 的 `.resume-rt a` 与 `rt-c-blue` 字体色选项。经历库类别色全组件统一：项目=sage、论文=green、实习=purple、荣誉=yellow（SmartRecommendations / ResumeCatalog / ModuleRenderer 勿各搞一套）。`index.html` 启动占位与 `public/404.html` 用裸 hex（sage-500 `#5f7a5f` / sage-600 `#4a614a`）。
+
 ## 验证命令（改完必跑）
 
 ```bash
@@ -54,7 +58,7 @@ npx vitest run             # 11 个测试文件，渲染测试用 @testing-libra
 
 ## 智能一页
 
-Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上报，勿把 `onPages` 放进测量 effect 依赖）。按钮是**开关**：默认中性色，点击时若 count > 1 先快照当前 settings（`preFitSettingsRef`）再启动 effect 循环（依赖仅 `[autoFit]`，页数经 ref 读、设置经 `update` 函数式更新读，每步 `setTimeout 220ms` 等重排稳定），按比例缩 fontScale/lineHeight/blockGap/pageMargin 直到 1 页或触底（`FIT_MIN`）或 14 步上限；结束（含触底）置 `fitApplied` 点亮按钮（`bg-blue-600`）。再次点击经 `update` 恢复快照设置（可撤销）并熄灭。count <= 1 时点击只提示「当前已是一页，无需压缩」，不点亮。
+Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上报，勿把 `onPages` 放进测量 effect 依赖）。按钮是**开关**：默认中性色，点击时若 count > 1 先快照当前 settings（`preFitSettingsRef`）再启动 effect 循环（依赖仅 `[autoFit]`，页数经 ref 读、设置经 `update` 函数式更新读，每步 `setTimeout 220ms` 等重排稳定），按比例缩 fontScale/lineHeight/blockGap/pageMargin 直到 1 页或触底（`FIT_MIN`）或 14 步上限；结束（含触底）置 `fitApplied` 点亮按钮（`bg-sage-600`）。再次点击经 `update` 恢复快照设置（可撤销）并熄灭。count <= 1 时点击只提示「当前已是一页，无需压缩」，不点亮。
 
 ## 模板
 

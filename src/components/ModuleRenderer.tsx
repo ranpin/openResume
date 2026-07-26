@@ -18,7 +18,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
       return (
         <div className={`${cardClass} p-5`}>
           <div className="flex items-start space-x-3">
-            <span className="text-xs text-blue-600 font-mono bg-blue-50 px-2 py-1 rounded whitespace-nowrap">
+            <span className="text-xs text-sage-600 font-mono bg-sage-50 px-2 py-1 rounded whitespace-nowrap">
               {data.date}
             </span>
             <p className="text-gray-800 font-medium leading-relaxed">
@@ -47,8 +47,8 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
           {(data.businessContext || data.yourRole) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {data.businessContext && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
+                <div className="bg-sage-50 p-4 rounded-lg">
+                  <h4 className="text-xs font-bold text-sage-600 uppercase tracking-wider mb-2">
                     业务背景
                   </h4>
                   <Markdown className="prose-sm">
@@ -57,8 +57,8 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
                 </div>
               )}
               {data.yourRole && (
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">
+                <div className="bg-sage-100 p-4 rounded-lg">
+                  <h4 className="text-xs font-bold text-sage-700 uppercase tracking-wider mb-2">
                     我的角色
                   </h4>
                   <Markdown className="prose-sm">{data.yourRole}</Markdown>
@@ -70,7 +70,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
           {data.architectureDetail && (
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                <Icon name="layer-group" className="text-blue-500 mr-2" />
+                <Icon name="layer-group" className="text-sage-500 mr-2" />
                 技术架构详解
               </h3>
               <Markdown className="prose-sm bg-gray-50 p-4 rounded-lg">
@@ -106,7 +106,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
                       )}
                       {isObject && item.impact && (
                         <p className="text-sm text-gray-600 mt-1">
-                          <span className="font-semibold text-blue-600">
+                          <span className="font-semibold text-sage-600">
                             效果：
                           </span>
                           {item.impact}
@@ -166,7 +166,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
                         <td className="border border-gray-200 px-4 py-2 text-green-600 font-semibold">
                           {result.value}
                         </td>
-                        <td className="border border-gray-200 px-4 py-2 text-blue-600">
+                        <td className="border border-gray-200 px-4 py-2 text-sage-600">
                           {result.baseline || result.improvement}
                         </td>
                       </tr>
@@ -238,7 +238,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
                   href={data.githubUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center"
+                  className="text-xs text-sage-600 hover:underline flex items-center"
                 >
                   <Icon name="github" className="mr-1" />
                   GitHub
@@ -268,7 +268,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
               <h3 className="text-xl font-bold text-gray-900">
                 {data.company}
               </h3>
-              <p className="text-blue-600 font-medium mt-1">{data.position}</p>
+              <p className="text-sage-600 font-medium mt-1">{data.position}</p>
             </div>
             <div className="text-right">
               <span className="text-sm text-gray-500 font-mono block">
@@ -314,7 +314,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
     case 'publication':
       return (
         <div className={`${cardClass} p-5`}>
-          <h3 className="text-lg font-bold text-blue-700 mb-1">{data.title}</h3>
+          <h3 className="text-lg font-bold text-sage-700 mb-1">{data.title}</h3>
           <p className="text-sm text-gray-600 mb-1">{data.authors}</p>
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-gray-500 italic">
@@ -325,7 +325,7 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
                 href={data.link}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-blue-500 hover:underline flex items-center"
+                className="text-xs text-sage-500 hover:underline flex items-center"
               >
                 <Icon name="external-link-alt" className="mr-1" />
                 链接
@@ -352,22 +352,22 @@ const ModuleRenderer = ({ type, data, isDetail = false }) => {
 
     case 'personal-info':
       return (
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-sage-500 to-sage-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center space-x-4 mb-4">
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold backdrop-blur">
               {(data.name || '?')[0]}
             </div>
             <div>
               <h2 className="text-2xl font-bold">{data.name}</h2>
-              <p className="text-blue-100">{data.title}</p>
+              <p className="text-sage-100">{data.title}</p>
             </div>
           </div>
           {data.bio?.main && (
-            <p className="text-sm text-blue-50 leading-relaxed">
+            <p className="text-sm text-sage-50 leading-relaxed">
               {data.bio.main}
             </p>
           )}
-          <div className="mt-3 flex items-center text-xs text-blue-200 space-x-3">
+          <div className="mt-3 flex items-center text-xs text-sage-200 space-x-3">
             {data.location && (
               <span className="flex items-center">
                 <Icon name="map-marker-alt" className="mr-1" />

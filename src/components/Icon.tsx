@@ -87,7 +87,7 @@ import {
  * 图标以 1em 尺寸渲染，因此沿用原有的 `text-*` 字号 / 颜色类即可，
  * 视觉表现与 `<i className="fas fa-xxx">` 基本一致。
  *
- * 用法：<Icon name="home" className="text-blue-500 mr-2" />
+ * 用法：<Icon name="home" className="text-sage-500 mr-2" />
  */
 
 // 原 Font Awesome 名称（去掉 fa- 前缀）到 lucide 组件的映射

@@ -5,7 +5,7 @@ import rehypeHighlight from 'rehype-highlight';
 
 interface MarkdownProps {
   children?: string;
-  /** 额外的 prose 尺寸/主题类，如 "prose-sm prose-blue" */
+  /** 额外的 prose 尺寸/主题类，如 "prose-sm prose-sage" */
   className?: string;
 }
 

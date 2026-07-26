@@ -49,7 +49,7 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
             onClick={() => setResumeCategory(tab.key)}
             className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base flex items-center ${
               resumeCategory === tab.key
-                ? 'bg-blue-600 text-white shadow-lg'
+                ? 'bg-sage-600 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm'
             }`}
           >
@@ -66,12 +66,12 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
             <div
               key={project.id || index}
               onClick={() => onArticleClick(project)}
-              className="border-l-4 border-blue-500 pl-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer rounded-r-lg"
+              className="border-l-4 border-sage-500 pl-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer rounded-r-lg"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-1">
-                    <h3 className="text-lg font-medium text-gray-800 hover:text-blue-600 transition-colors">
+                    <h3 className="text-lg font-medium text-gray-800 hover:text-sage-600 transition-colors">
                       {project.title}
                     </h3>
                     {project.status && (
@@ -111,7 +111,7 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
                 {(project.tags || []).map((tag, i) => (
                   <span
                     key={`${tag}-${i}`}
-                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                    className="px-2 py-1 bg-sage-100 text-sage-700 rounded text-xs font-medium"
                   >
                     {tag}
                   </span>
