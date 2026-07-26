@@ -28,7 +28,7 @@ npx vitest run             # 11 个测试文件，渲染测试用 @testing-libra
 全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
 
 - 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除模块——自定义模块真删除，内置模块 trash=隐藏、经「已隐藏」恢复）→「智能一页」（开关：压缩塞一页 / 再点恢复）+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「翻译成英文」（懒加载 `AiTranslatePanel`，成功经 `onTranslated` 关编辑器回查看器展示英文草稿）→「发布到线上」→「重置」（dirty 时）→「关闭」。
-- 查看器首页（`ResumeSection.tsx`）：**点简历横排卡片直接进编辑器**（`setActiveId + setEditing`），无独立「编辑」按钮；工具条只保留创建级入口 AI 生成 / 导入简历。文档级操作（编辑 / 翻译成英文 / 发布 / 导出 PDF·Word·YAML / 重置）一律在编辑器工具栏内——勿移回查看器。
+- 查看器首页（`ResumeSection.tsx`）：顶部一行 `flex justify-between`——左为一级切换（我的简历 / 详细经历），右为创建级入口 AI 生成（primary）/ 导入简历（与切换同级，两个视图都可见）。**点简历横排卡片直接进编辑器**（`setActiveId + setEditing`），无独立「编辑」按钮。文档级操作（编辑 / 翻译成英文 / 发布 / 导出 PDF·Word·YAML / 重置）一律在编辑器工具栏内——勿移回查看器。
 - 撤销/重做：单一入口 `update(fn)`——600ms 时间窗合并（连续输入/拖拽/智能一页多步各算一个撤销点），undoStack/redoStack 为 ref（上限 100），按钮 disabled 直接读 ref（靠 setDraft 触发重渲染）。**新增任何改动数据的路径必须走 `update`**，否则破坏撤销栈。
 - 预览缩放必须打印安全：`PreviewFit.tsx` 包住预览面板（编辑器 + 查看器），ResizeObserver 算 `scale = min(1, 可用宽 / 794)`，经 CSS 变量 `--preview-fit` / `--preview-fit-h` + transform 缩放；`resume.css` 里相关样式只在 `@media screen` 生效，`@media print` 下 `!important` 复位原尺寸——「导出 PDF」是 window.print()，会打印预览容器内的文档，缩放绝不能带进打印。不要把这套缩放改成内联样式或套到打印链路。
 

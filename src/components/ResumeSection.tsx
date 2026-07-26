@@ -27,10 +27,15 @@ const ToolbarButton: React.FC<{
   icon: string;
   label: string;
   onClick: () => void;
-}> = ({ icon, label, onClick }) => (
+  primary?: boolean;
+}> = ({ icon, label, onClick, primary }) => (
   <button
     onClick={onClick}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+      primary
+        ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
+        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+    }`}
   >
     <Icon name={icon} />
     {label}
@@ -97,27 +102,42 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
 
   return (
     <div>
-      {/* 一级切换：我的简历 / 详细经历 */}
-      <div className="mb-8 inline-flex rounded-xl bg-gray-100 p-1">
-        {(
-          [
-            { key: 'resume', label: '我的简历', icon: 'file-alt' },
-            { key: 'catalog', label: '详细经历', icon: 'folder-open' },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setView(t.key)}
-            className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${
-              view === t.key
-                ? 'bg-white text-sage-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Icon name={t.icon} />
-            {t.label}
-          </button>
-        ))}
+      {/* 顶部：一级切换（我的简历 / 详细经历）与创建级入口（AI 生成 / 导入简历）同行 */}
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-xl bg-gray-100 p-1">
+          {(
+            [
+              { key: 'resume', label: '我的简历', icon: 'file-alt' },
+              { key: 'catalog', label: '详细经历', icon: 'folder-open' },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setView(t.key)}
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${
+                view === t.key
+                  ? 'bg-white text-sage-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Icon name={t.icon} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <ToolbarButton
+            icon="sparkles"
+            label="AI 生成"
+            primary
+            onClick={() => setAiOpen(true)}
+          />
+          <ToolbarButton
+            icon="file-import"
+            label="导入简历"
+            onClick={() => setImportOpen(true)}
+          />
+        </div>
       </div>
 
       {view === 'catalog' ? (
@@ -169,21 +189,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
                 </button>
               );
             })}
-          </div>
-
-          {/* 工具条：点上方简历卡片直接进编辑器；这里只保留创建级入口（AI 生成 / 导入）。
-              文档级操作（编辑 / 翻译 / 发布 / 导出 / 重置）一律在编辑器工具栏内。 */}
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <ToolbarButton
-              icon="sparkles"
-              label="AI 生成"
-              onClick={() => setAiOpen(true)}
-            />
-            <ToolbarButton
-              icon="file-import"
-              label="导入简历"
-              onClick={() => setImportOpen(true)}
-            />
           </div>
 
           {hasDraft && (
