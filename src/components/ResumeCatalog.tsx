@@ -4,7 +4,7 @@ import { useContentStore } from '../store/useContentStore';
 import Icon from './Icon';
 import type { Project, Publication, Internship } from '../types';
 
-// 「详细经历」目录：项目 / 论文 / 实习 / 荣誉 四个分类。
+// 「作品集」目录：项目 / 论文 / 实习 / 荣誉 四个分类。
 // 由原 ResumeSection 平移而来，行为不变，作为简历背后的详细佐证。
 
 interface ResumeCatalogProps {
