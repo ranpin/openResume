@@ -310,6 +310,23 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     setDraft(resumeId, next);
   };
 
+  // ⌘Z / ⌘⇧Z 全局撤销重做；焦点在可编辑元素（输入框/文本域/富文本）内时
+  // 交还浏览器默认行为，经 ref 始终调用最新闭包
+  const undoRedoRef = useRef({ undo, redo });
+  undoRedoRef.current = { undo, redo };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault();
+      if (e.shiftKey) undoRedoRef.current.redo();
+      else undoRedoRef.current.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const lines = (arr?: string[]) => (arr || []).join('\n');
   const toLines = (v: string) => v.split('\n');
 
