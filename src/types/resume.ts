@@ -1,7 +1,7 @@
 // 简历文档中心的结构化数据模型。
 // 每份简历是一份 ResumeData：站点渲染为 A4 简历用于查看，
-// 编辑器编辑这份数据（草稿存 localStorage），大模型未来也产出这份数据。
-// 源文件在 content/resumes/*.yaml，由 src/data/content.ts 加载。
+// 编辑器编辑这份数据（草稿存 IndexedDB），大模型未来也产出这份数据。
+// 源文件在数据仓库 resumes/*.yaml（见 src/data/source.ts），运行时由 src/data/content.ts 拉取。
 
 export interface ResumeBasics {
   name: string;

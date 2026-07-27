@@ -55,7 +55,7 @@ export const legacySkillsToText = (groups: LegacySkillGroup[]): string =>
 /**
  * 数据迁移入口：把旧格式字段就地转为现行格式。
  * 纯函数，无需迁移时原样返回（同一引用）。
- * 调用点：content/resumes 载入（content.ts）、编辑器取数（兼容旧 localStorage 草稿）、
+ * 调用点：数据仓库简历载入（content.ts）、编辑器取数（兼容旧草稿）、
  * AI 生成/导入/翻译的返回值（模型可能输出旧格式）。
  */
 export const migrateResume = <T extends ResumeData>(d: T): T => {
@@ -81,7 +81,7 @@ export const normalizeResume = (d: ResumeData): string => {
 export const isSameResume = (a: ResumeData, b: ResumeData): boolean =>
   normalizeResume(a) === normalizeResume(b);
 
-// 导出与 content/resumes/*.yaml 同构的 YAML（id 由文件名派生，故省略）
+// 导出与数据仓库 resumes/*.yaml 同构的 YAML（id 由文件名派生，故省略）
 export const resumeToYaml = (d: ResumeData): string => {
   const { id, ...rest } = sanitizeResume(d);
   void id;

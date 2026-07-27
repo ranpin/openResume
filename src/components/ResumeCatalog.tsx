@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePortfolioStore } from '../store/usePortfolioStore';
+import { useContentStore } from '../store/useContentStore';
 import Icon from './Icon';
 import type { Project, Publication, Internship } from '../types';
 
@@ -36,7 +37,7 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
   onPaperClick,
   onInternshipClick,
 }) => {
-  const { projects, publications, internships, honors } = usePortfolioStore();
+  const { projects, publications, internships, honors } = useContentStore();
   const setResumeCategory = usePortfolioStore((s) => s.setResumeCategory);
 
   return (

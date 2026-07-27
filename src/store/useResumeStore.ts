@@ -1,14 +1,18 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStateStorage } from './idb';
 import type { ResumeData } from '../types/resume';
 
+// 持久化键名（旧版 localStorage 同名键，首次启动时由 migrateLegacyKeys 迁入 IndexedDB）
+export const DRAFTS_STORAGE_KEY = 'ranpin-resume-drafts';
+
 /**
- * 简历编辑器的可变状态：本地草稿（按简历 id）持久化到 localStorage。
- * 已发布数据只读地来自 content/resumes（见 src/data/content.ts）；
- * 草稿是用户在编辑器里的改动，刷新不丢，直到「重置」或把导出的 YAML 提交进仓库。
+ * 简历编辑器的可变状态：本地草稿（按简历 id）持久化到 IndexedDB（见 src/store/idb.ts，
+ * 不可用时自动降级 localStorage）。已发布数据只读地来自数据仓库（见 src/data/content.ts）；
+ * 草稿是用户在编辑器里的改动，刷新不丢，直到「重置」或发布到数据仓库。
  *
- * SSG 安全：persist 用 skipHydration，避免预渲染 / 水合期读取 localStorage
- * 造成不一致。组件挂载后在 useEffect 里调 useResumeStore.persist.rehydrate()。
+ * SSG 安全：persist 用 skipHydration，避免预渲染 / 水合期读取存储造成不一致。
+ * 组件挂载后在 useEffect 里先 migrateLegacyKeys 再 useResumeStore.persist.rehydrate()。
  */
 
 export interface ResumeStoreState {
@@ -50,8 +54,8 @@ export const useResumeStore = create<ResumeStoreState>()(
       setHydrated: (v) => set({ hydrated: v }),
     }),
     {
-      name: 'ranpin-resume-drafts',
-      storage: createJSONStorage(() => localStorage),
+      name: DRAFTS_STORAGE_KEY,
+      storage: createJSONStorage(() => idbStateStorage),
       // 持久化草稿与已发布指纹，UI 状态（activeId/hydrated）不入库
       partialize: (s) => ({ drafts: s.drafts, published: s.published }),
       skipHydration: true,

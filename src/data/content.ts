@@ -1,67 +1,93 @@
-/// <reference types="vite/client" />
-// 内容加载器 —— 简历中心的数据源在仓库根部的 `content/` 目录：
-//   经历库(honors / internships / projects) 与 简历(resumes/) 都用 YAML。
-// 构建时通过 import.meta.glob 读入并解析。编辑内容 = 改 content/ 下的文件。
+// 内容加载器 —— 数据源为独立数据仓库（见 source.ts），运行时拉取：
+//   index.json（清单）→ 并行拉取各 YAML → 解析。
+// 单文件失败只跳过该文件（清单过期等）；清单本身失败则抛错，
+// 由上层 useContentStore 回退 IndexedDB 离线缓存。
 import { load as parseYaml } from 'js-yaml';
+import { DATA_BASE_URL } from './source';
 import type { Project, Publication, Internship, Honor } from '../types';
 import type { ResumeData } from '../types/resume';
 import { migrateResume } from '../components/resume/resumeIo';
 
-// 注意：import.meta.glob 的第二个参数必须是内联对象字面量（Vite 静态分析要求）。
+export interface ContentBundle {
+  resumes: ResumeData[];
+  projects: Project[];
+  publications: Publication[];
+  internships: Internship[];
+  honors: Honor[];
+}
 
-type RawGlob = Record<string, string>;
+export const EMPTY_CONTENT: ContentBundle = {
+  resumes: [],
+  projects: [],
+  publications: [],
+  internships: [],
+  honors: [],
+};
 
-// 取单个 YAML 文件的内容
-const loadOne = <T>(glob: RawGlob): T =>
-  parseYaml(Object.values(glob)[0]) as T;
-
-// 取一组文件，按路径（文件名）升序返回 [path, 解析结果]
-const loadMany = <T>(glob: RawGlob): Array<[string, T]> =>
-  Object.entries(glob)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([path, raw]) => [path, parseYaml(raw) as T]);
+// 数据仓库根部的 index.json：各集合的 YAML 相对路径清单
+interface ContentIndex {
+  resumes?: string[];
+  projects?: string[];
+  internships?: string[];
+  honors?: string[];
+}
 
 // 文件名（去扩展名），用作稳定唯一 id
 const slugOf = (path: string): string =>
   path
     .split('/')
     .pop()!
-    .replace(/\.(ya?ml|md)$/, '');
+    .replace(/\.(ya?ml)$/, '');
 
-// --- 导出 ---
+const fetchText = async (url: string): Promise<string> => {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+};
 
-export const honors: Honor[] = loadOne<Honor[]>(
-  import.meta.glob('/content/honors.yaml', {
-    eager: true,
-    query: '?raw',
-    import: 'default',
-  }) as RawGlob,
-).map((h, i) => ({ ...h, id: i + 1 }));
+// 并行拉取一组 YAML 并按路径升序返回 [slug, 解析结果]；单文件失败跳过（warn）
+const loadMany = async <T>(paths: string[]): Promise<Array<[string, T]>> => {
+  const settled = await Promise.allSettled(
+    paths.map(
+      async (p) =>
+        [slugOf(p), parseYaml(await fetchText(`${DATA_BASE_URL}/${p}`)) as T] as [
+          string,
+          T,
+        ],
+    ),
+  );
+  settled.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      console.warn(`[content] 跳过加载失败的文件 ${paths[i]}：`, r.reason);
+    }
+  });
+  return settled
+    .filter(
+      (r): r is PromiseFulfilledResult<[string, T]> => r.status === 'fulfilled',
+    )
+    .map((r) => r.value)
+    .sort(([a], [b]) => a.localeCompare(b));
+};
 
-export const internships: Internship[] = loadMany<Internship>(
-  import.meta.glob('/content/internships/*.yaml', {
-    eager: true,
-    query: '?raw',
-    import: 'default',
-  }) as RawGlob,
-).map(([path, v]) => ({ ...v, id: slugOf(path) }));
+export const loadContent = async (): Promise<ContentBundle> => {
+  // 纯本地模式：无远程数据源，内容恒空（简历来自本地草稿）
+  if (!DATA_BASE_URL) return EMPTY_CONTENT;
 
-export const projects: Project[] = loadMany<Project>(
-  import.meta.glob('/content/projects/*.yaml', {
-    eager: true,
-    query: '?raw',
-    import: 'default',
-  }) as RawGlob,
-).map(([path, v]) => ({ ...v, id: slugOf(path) }));
-
-export const publications: Publication[] = [];
-
-// 简历文档：每个 YAML 一份简历，文件名（去扩展名）作为稳定 id，按文件名升序。
-// 载入时经 migrateResume 迁移旧格式字段（如 skills 分组数组 → 富文本）。
-export const resumes: ResumeData[] = loadMany<ResumeData>(
-  import.meta.glob('/content/resumes/*.yaml', {
-    eager: true,
-    query: '?raw',
-    import: 'default',
-  }) as RawGlob,
-).map(([path, v]) => migrateResume({ ...v, id: slugOf(path) }));
+  const index: ContentIndex = JSON.parse(
+    await fetchText(`${DATA_BASE_URL}/index.json`),
+  );
+  const [resumes, projects, internships, honorsFiles] = await Promise.all([
+    loadMany<ResumeData>(index.resumes ?? []),
+    loadMany<Project>(index.projects ?? []),
+    loadMany<Internship>(index.internships ?? []),
+    loadMany<Honor[]>(index.honors ?? []),
+  ]);
+  return {
+    // 载入时经 migrateResume 迁移旧格式字段（如 skills 分组数组 → 富文本）
+    resumes: resumes.map(([id, v]) => migrateResume({ ...v, id })),
+    projects: projects.map(([id, v]) => ({ ...v, id })),
+    publications: [] as Publication[],
+    internships: internships.map(([id, v]) => ({ ...v, id })),
+    honors: (honorsFiles[0]?.[1] ?? []).map((h, i) => ({ ...h, id: i + 1 })),
+  };
+};
