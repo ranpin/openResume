@@ -6,6 +6,12 @@ import RichTextField from './RichTextField';
 import PeriodField from './PeriodField';
 import TagField from './TagField';
 import DiagnosticsPanel from './DiagnosticsPanel';
+import IconBtn from './IconBtn';
+import ToolbarPopover from './ToolbarPopover';
+import TemplatePanel from './TemplatePanel';
+import ColorPanel from './ColorPanel';
+import LayoutPanel from './LayoutPanel';
+import ModulePanel from './ModulePanel';
 import {
   cloneResume,
   downloadResumeYaml,
@@ -14,13 +20,9 @@ import {
   migrateResume,
   normalizeResume,
 } from './resumeIo';
-import { THEME_OPTIONS, TEMPLATE_OPTIONS } from './resumeTheme';
-import {
-  resolveSections,
-  sectionConfigFromData,
-  type ResolvedSection,
-} from './resumeSections';
-import { FONT_OPTIONS, fontStack } from './resumeFonts';
+import { resolveSections, type ResolvedSection } from './resumeSections';
+import { FIT_MIN, SETTING_DEFAULTS } from './resumeSettings';
+import { moveInArray, moveItem } from '../../utils/array';
 import {
   EXAMPLE_ACTIVITY,
   EXAMPLE_AWARD,
@@ -45,10 +47,6 @@ import type {
   ResumeCustomSection,
   ResumeProject,
   ResumeSettings,
-  ResumeTemplate,
-  ResumeTheme,
-  ResumeFieldSeparator,
-  ResumeHeaderAlign,
 } from '../../types/resume';
 
 // 可拖拽排序的数组字段
@@ -75,52 +73,6 @@ const LANGUAGE_LEVELS = [
   '托福 100+',
 ];
 
-// 全局排版设置的默认值与范围（字号为磅值选择，其余为滑块）
-const SETTING_DEFAULTS = {
-  fontScale: 1,
-  lineHeight: 1.6,
-  blockGap: 16,
-  pageMargin: 45,
-};
-
-// 全局字号：Word 式磅值选择。正文基准 13px（≈9.75pt），显示磅值 = 9.75 × fontScale，
-// 选择字号写回对应倍率（数据模型仍是 fontScale，兼容既有简历 YAML）。
-const BODY_BASE_PT = 9.75;
-const FONT_SIZE_OPTIONS = [8, 9, 10, 11, 12, 13, 14, 15, 16];
-const scaleToPt = (scale: number): number => Math.round(BODY_BASE_PT * scale);
-// 选项列表并入当前磅值（压缩排版后的非整档倍率也能正确回显）
-const fontSizeOptions = (current: number): number[] =>
-  [...new Set([...FONT_SIZE_OPTIONS, current])].sort((a, b) => a - b);
-
-// 条目标题排版选项（文本格式：单/双行 + 字段排列）
-const HEADER_LINES_OPTIONS: { id: 1 | 2; label: string }[] = [
-  { id: 2, label: '双行' },
-  { id: 1, label: '单行' },
-];
-const FIELD_SEPARATOR_OPTIONS: { id: ResumeFieldSeparator; label: string }[] = [
-  { id: 'justify', label: '分散对齐' },
-  { id: 'dot', label: '·' },
-  { id: 'slash', label: '/' },
-  { id: 'bar', label: '|' },
-];
-
-// 个人信息（头部）板块对齐选项
-const HEADER_ALIGN_OPTIONS: { id: ResumeHeaderAlign; label: string; icon: string }[] = [
-  { id: 'left', label: '左对齐', icon: 'align-left' },
-  { id: 'center', label: '居中', icon: 'align-center' },
-  { id: 'right', label: '右对齐', icon: 'align-right' },
-];
-
-// 「智能一页」压缩下限（与对应滑块的最小值一致）
-const FIT_MIN = { fontScale: 0.8, lineHeight: 1.2, blockGap: 6, pageMargin: 24 };
-
-const moveItem = (arr: unknown[], from: number, to: number): void => {
-  if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length)
-    return;
-  const [it] = arr.splice(from, 1);
-  arr.splice(to, 0, it);
-};
-
 /**
  * 超级简历式简历编辑器：左侧分区表单，右侧实时预览。
  * 所有改动写入 useResumeStore 的本地草稿（IndexedDB，刷新不丢）。
@@ -132,14 +84,6 @@ interface ResumeEditorProps {
   published: ResumeData; // 已发布版本，用于「重置」
   onClose: () => void;
 }
-
-const moveInArray = <T,>(arr: T[], i: number, dir: number): void => {
-  const j = i + dir;
-  if (j < 0 || j >= arr.length) return;
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
-};
 
 const Field: React.FC<{
   label: string;
@@ -182,118 +126,6 @@ const SelectField: React.FC<{
     </select>
   </label>
 );
-
-const Slider: React.FC<{
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  display: (v: number) => string;
-  onChange: (v: number) => void;
-}> = ({ label, value, min, max, step, display, onChange }) => (
-  <label className="block">
-    <span className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
-      <span>{label}</span>
-      <span className="font-mono text-gray-700">{display(value)}</span>
-    </span>
-    <input
-      type="range"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="w-full accent-sage-600 cursor-pointer"
-    />
-  </label>
-);
-
-const IconBtn: React.FC<{
-  icon: string;
-  onClick: () => void;
-  disabled?: boolean;
-  danger?: boolean;
-  title?: string;
-}> = ({ icon, onClick, disabled, danger, title }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    title={title}
-    className={`w-7 h-7 flex items-center justify-center rounded-md text-sm transition-colors ${
-      disabled
-        ? 'text-gray-300 cursor-not-allowed'
-        : danger
-          ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-          : 'text-gray-500 hover:text-sage-600 hover:bg-sage-50'
-    }`}
-  >
-    <Icon name={icon} />
-  </button>
-);
-
-/**
- * 顶栏下拉面板（超级简历式）：点击按钮展开设置面板，点外部 / Esc 关闭。
- * 全局设置（模板 / 配色 / 排版 / 导出）都收进这里，左侧面板只留内容编辑。
- */
-const ToolbarPopover: React.FC<{
-  icon: string;
-  label: string;
-  active?: boolean;
-  align?: 'left' | 'right';
-  panelClassName?: string;
-  title?: string;
-  children: (close: () => void) => React.ReactNode;
-}> = ({ icon, label, active, align = 'left', panelClassName, title, children }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        title={title}
-        onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-          active
-            ? 'border-sage-500 bg-sage-50 text-sage-700'
-            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-        }`}
-      >
-        <Icon name={icon} />
-        <span className="hidden lg:inline">{label}</span>
-        <Icon
-          name="chevron-down"
-          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`absolute top-full mt-2 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-4 ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } ${panelClassName || 'w-72'}`}
-        >
-          {children(() => setOpen(false))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const SectionHeader: React.FC<{
   icon: string;
@@ -526,42 +358,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     },
   });
 
-  // --- 全局排版设置 ---
-  const settings = { ...SETTING_DEFAULTS, ...(data.settings || {}) };
-  const setSetting = (k: keyof typeof SETTING_DEFAULTS, v: number) =>
-    update((d) => {
-      d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), [k]: v };
-    });
-  const setFontFamily = (v: string) =>
-    update((d) => {
-      d.settings = {
-        ...SETTING_DEFAULTS,
-        ...(d.settings || {}),
-        fontFamily: v === 'default' ? undefined : v,
-      };
-    });
-  const resetSettings = () => update((d) => (d.settings = { ...SETTING_DEFAULTS }));
-  const setHeaderLines = (v: 1 | 2) =>
-    update((d) => {
-      d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), headerLines: v };
-    });
-  const setFieldSeparator = (v: ResumeFieldSeparator) =>
-    update((d) => {
-      d.settings = {
-        ...SETTING_DEFAULTS,
-        ...(d.settings || {}),
-        fieldSeparator: v,
-      };
-    });
-  const setHeaderAlign = (v: ResumeHeaderAlign) =>
-    update((d) => {
-      d.settings = {
-        ...SETTING_DEFAULTS,
-        ...(d.settings || {}),
-        headerAlign: v,
-      };
-    });
-
   // --- 智能一页：按屏幕分页页数，逐步压缩排版设置直到一页或到达下限 ---
   const [pageCount, setPageCount] = useState(1);
   const pageCountRef = useRef(pageCount);
@@ -662,32 +458,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const resolved: ResolvedSection[] = resolveSections(data.sections, data.custom);
   const titleOf = (key: string) =>
     resolved.find((s) => s.key === key)?.title || '';
-  // 任何模块编辑都先「物化」出完整有序配置，再改
-  const editSections = (fn: (arr: ReturnType<typeof sectionConfigFromData>) => void) =>
-    update((d) => {
-      const arr = sectionConfigFromData({ ...d, id: d.id });
-      fn(arr);
-      d.sections = arr;
-    });
-  const moveSection = (i: number, dir: number) =>
-    editSections((arr) => moveInArray(arr, i, dir));
-  const moveSectionTo = (from: number, to: number) =>
-    editSections((arr) => moveItem(arr, from, to));
-  const setSectionTitle = (i: number, v: string) => {
-    // 自定义模块的标题存在 data.custom[].title（单一事实来源），其余存 sections 配置
-    const sec = resolved[i];
-    if (sec?.key === 'custom' && sec.customId) {
-      update((d) => {
-        const c = (d.custom || []).find((x) => x.id === sec.customId);
-        if (c) c.title = v;
-      });
-      return;
-    }
-    editSections((arr) => (arr[i].title = v));
-  };
-  const toggleSectionHidden = (i: number) =>
-    editSections((arr) => (arr[i].hidden = !arr[i].hidden));
-  const [secDrag, setSecDrag] = useState<number | null>(null);
 
   // --- 自定义模块（自由标题 + 富文本正文）---
   const addCustomSection = () =>
@@ -754,355 +524,17 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           {/* 全局设置：模板 / 配色 / 排版（下拉面板）+ 智能一页 */}
           <div className="flex items-center gap-1.5 pr-2 border-r border-gray-200">
-            <ToolbarPopover
-              icon="layer-group"
-              label="模板"
-              title="模板版式"
-              panelClassName="w-44"
-            >
-              {(close) => (
-                <div className="space-y-1">
-                  {TEMPLATE_OPTIONS.map((t) => {
-                    const active = (data.template || 'classic') === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          update((d) => (d.template = t.id as ResumeTemplate));
-                          close();
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                          active
-                            ? 'bg-sage-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </ToolbarPopover>
+            <TemplatePanel data={data} update={update} />
 
-            <ToolbarPopover
-              icon="palette"
-              label="配色"
-              title="配色主题"
-              panelClassName="w-40"
-            >
-              {(close) => (
-                <div className="flex flex-wrap gap-2">
-                  {THEME_OPTIONS.map((t) => {
-                    const active = (data.theme || 'blue') === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        title={t.label}
-                        onClick={() => {
-                          update((d) => (d.theme = t.id as ResumeTheme));
-                          close();
-                        }}
-                        className={`w-8 h-8 rounded-full ${t.dot} ring-2 ring-offset-2 transition ${
-                          active
-                            ? 'ring-gray-800'
-                            : 'ring-transparent hover:ring-gray-300'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </ToolbarPopover>
+            <ColorPanel data={data} update={update} />
 
-            <ToolbarPopover
-              icon="text-height"
-              label="排版"
-              title="全局排版"
-              panelClassName="w-80 max-h-[70vh] overflow-y-auto"
-            >
-              {() => (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800">
-                      全局排版
-                    </span>
-                    <button
-                      type="button"
-                      onClick={resetSettings}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-sage-600"
-                    >
-                      <Icon name="redo" />
-                      恢复默认
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <label className="block">
-                      <span className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
-                        <span>全局字号</span>
-                        <span className="font-mono text-gray-700">
-                          {scaleToPt(settings.fontScale)} pt
-                        </span>
-                      </span>
-                      <select
-                        value={String(scaleToPt(settings.fontScale))}
-                        onChange={(e) =>
-                          setSetting(
-                            'fontScale',
-                            +(parseInt(e.target.value, 10) / BODY_BASE_PT).toFixed(4),
-                          )
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none cursor-pointer hover:border-sage-400 focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
-                      >
-                        {fontSizeOptions(scaleToPt(settings.fontScale)).map((pt) => (
-                          <option key={pt} value={String(pt)}>
-                            {pt}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Slider
-                      label="行间距"
-                      value={settings.lineHeight}
-                      min={1.2}
-                      max={2}
-                      step={0.05}
-                      display={(v) => v.toFixed(2)}
-                      onChange={(v) => setSetting('lineHeight', v)}
-                    />
-                    <Slider
-                      label="模块间距"
-                      value={settings.blockGap}
-                      min={6}
-                      max={32}
-                      step={1}
-                      display={(v) => `${v}px`}
-                      onChange={(v) => setSetting('blockGap', v)}
-                    />
-                    <Slider
-                      label="页边距"
-                      value={settings.pageMargin}
-                      min={24}
-                      max={72}
-                      step={1}
-                      display={(v) => `${v}px`}
-                      onChange={(v) => setSetting('pageMargin', v)}
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-xs font-medium text-gray-500 mb-1">
-                      正文字体
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {FONT_OPTIONS.map((f) => {
-                        const active =
-                          (settings.fontFamily || 'default') === f.key;
-                        const stack = fontStack(f.key);
-                        return (
-                          <button
-                            key={f.key}
-                            type="button"
-                            onClick={() => setFontFamily(f.key)}
-                            style={stack ? { fontFamily: stack } : undefined}
-                            className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                              active
-                                ? 'border-sage-500 bg-sage-50 text-sage-700'
-                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                            }`}
-                          >
-                            {f.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="block text-xs font-medium text-gray-500 mb-1">
-                      标题行数
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {HEADER_LINES_OPTIONS.map((o) => {
-                        const active =
-                          (data.settings?.headerLines ?? 2) === o.id;
-                        return (
-                          <button
-                            key={o.id}
-                            type="button"
-                            onClick={() => setHeaderLines(o.id)}
-                            className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                              active
-                                ? 'bg-sage-600 text-white border-sage-600'
-                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="block text-xs font-medium text-gray-500 mb-1">
-                      字段样式
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {FIELD_SEPARATOR_OPTIONS.map((o) => {
-                        const active =
-                          (data.settings?.fieldSeparator ?? 'dot') === o.id;
-                        return (
-                          <button
-                            key={o.id}
-                            type="button"
-                            title={
-                              o.id === 'justify'
-                                ? '字段分散对齐：首字段贴左、时间贴右、中间均分（两端对齐）'
-                                : `用「${o.label}」分隔字段`
-                            }
-                            onClick={() => setFieldSeparator(o.id)}
-                            className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                              active
-                                ? 'bg-sage-600 text-white border-sage-600'
-                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-1 text-[11px] text-gray-400">
-                      控制学校/学院/专业/学位等字段在标题行的排布。
-                    </p>
-                  </div>
-                  <div>
-                    <span className="block text-xs font-medium text-gray-500 mb-1">
-                      个人信息对齐
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {HEADER_ALIGN_OPTIONS.map((o) => {
-                        const active = data.settings?.headerAlign === o.id;
-                        return (
-                          <button
-                            key={o.id}
-                            type="button"
-                            onClick={() => setHeaderAlign(o.id)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                              active
-                                ? 'bg-sage-600 text-white border-sage-600'
-                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            <Icon name={o.icon} />
-                            {o.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-1 text-[11px] text-gray-400">
-                      姓名 / 头衔 / 联系方式在头部的对齐；默认随证件照（有照片左对齐、无照片居中）。
-                    </p>
-                  </div>
-                </div>
-              )}
-            </ToolbarPopover>
+            <LayoutPanel data={data} update={update} />
 
-            <ToolbarPopover
-              icon="arrows-alt"
-              label="模块"
-              title="模块管理"
-              panelClassName="w-[26rem] max-w-[92vw] max-h-[70vh] overflow-y-auto"
-            >
-              {() => (
-                <div>
-                  <p className="mb-3 text-[11px] text-gray-400">
-                    拖动或用箭头调整模块顺序；改名后简历分区标题随之变化；可隐藏暂不需要的模块。
-                  </p>
-                  <div className="space-y-2">
-                    {resolved.map((sec, i) => (
-                      <div
-                        key={sec.customId ? `custom:${sec.customId}` : sec.key}
-                        onDragEnter={() => {
-                          if (secDrag === null || secDrag === i) return;
-                          moveSectionTo(secDrag, i);
-                          setSecDrag(i);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
-                          secDrag === i
-                            ? 'border-sage-400 shadow-md opacity-60'
-                            : 'border-gray-200'
-                        } ${sec.hidden ? 'bg-gray-50' : 'bg-white'}`}
-                      >
-                        <span
-                          draggable
-                          onDragStart={() => setSecDrag(i)}
-                          onDragEnd={() => setSecDrag(null)}
-                          title="拖拽排序"
-                          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1"
-                        >
-                          <Icon name="arrows-alt" />
-                        </span>
-                        <Icon
-                          name={sec.icon}
-                          className={sec.hidden ? 'text-gray-300' : 'text-sage-500'}
-                        />
-                        <input
-                          type="text"
-                          value={sec.title}
-                          onChange={(e) => setSectionTitle(i, e.target.value)}
-                          className={`flex-1 min-w-0 rounded-md border border-transparent hover:border-gray-200 focus:border-sage-500 px-2 py-1 text-sm outline-none ${
-                            sec.hidden ? 'text-gray-400 line-through' : 'text-gray-800'
-                          }`}
-                        />
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <IconBtn
-                            icon="arrow-up"
-                            onClick={() => moveSection(i, -1)}
-                            disabled={i === 0}
-                            title="上移"
-                          />
-                          <IconBtn
-                            icon="arrow-down"
-                            onClick={() => moveSection(i, 1)}
-                            disabled={i === resolved.length - 1}
-                            title="下移"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleSectionHidden(i)}
-                            title={sec.hidden ? '点击显示' : '点击隐藏'}
-                            className={`px-2 h-7 rounded-md text-xs font-medium transition-colors ${
-                              sec.hidden
-                                ? 'text-gray-400 hover:text-sage-600 hover:bg-sage-50'
-                                : 'text-sage-600 hover:bg-sage-50'
-                            }`}
-                          >
-                            {sec.hidden ? '已隐藏' : '显示'}
-                          </button>
-                          {sec.key === 'custom' && sec.customId ? (
-                            <IconBtn
-                              icon="trash"
-                              onClick={() => removeCustomSection(sec.customId!)}
-                              title="删除该自定义模块"
-                            />
-                          ) : (
-                            !sec.hidden && (
-                              <IconBtn
-                                icon="trash"
-                                onClick={() => toggleSectionHidden(i)}
-                                title="从简历中移除（可在模块管理里恢复）"
-                              />
-                            )
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </ToolbarPopover>
+            <ModulePanel
+              resolved={resolved}
+              update={update}
+              onRemoveCustom={removeCustomSection}
+            />
 
             <button
               type="button"
