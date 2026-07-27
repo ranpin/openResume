@@ -23,12 +23,19 @@ export function computeCompetitiveness(d: ResumeData): CompetitivenessResult {
   const b = d.basics;
   const edu = d.education || [];
   const work = d.work || [];
+  const internship = d.internship || [];
   const projects = d.projects || [];
   const skills = stripMd(d.skills || '');
 
   const highlights: string[] = [];
   work.forEach((w) => (w.highlights || []).forEach((h) => highlights.push(h)));
   work.forEach((w) =>
+    (w.projects || []).forEach((sp) =>
+      (sp.highlights || []).forEach((h) => highlights.push(h)),
+    ),
+  );
+  internship.forEach((w) => (w.highlights || []).forEach((h) => highlights.push(h)));
+  internship.forEach((w) =>
     (w.projects || []).forEach((sp) =>
       (sp.highlights || []).forEach((h) => highlights.push(h)),
     ),

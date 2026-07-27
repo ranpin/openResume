@@ -108,6 +108,7 @@ export type ResumeSectionKey =
   | 'summary'
   | 'education'
   | 'work'
+  | 'internship'
   | 'projects'
   | 'skills'
   | 'awards'
@@ -135,7 +136,7 @@ export interface ResumeCustomSection {
 export interface ResumeData {
   id: string; // 文件名 slug，稳定唯一
   label: string; // 横排 tab 名，如「算法岗·2026」
-  target?: string; // 目标岗位 / 说明
+  target?: string; // 目标岗位（旧字段，编辑入口已移除——求职意向用 basics.title；保留以兼容旧数据）
   updated?: string; // 更新日期
   pdfUrl?: string; // 预留：混合模式挂现成 PDF（MVP 不用）
   template?: ResumeTemplate; // 版式，默认 classic
@@ -145,6 +146,7 @@ export interface ResumeData {
   basics: ResumeBasics;
   education?: ResumeEducation[];
   work?: ResumeWork[];
+  internship?: ResumeWork[]; // 实习经历：结构与工作经历一致（复用 ResumeWork）
   projects?: ResumeProject[];
   skills?: string; // 专业技能：富文本（Markdown，同个人简介）。旧版为分组数组，载入时由 migrateResume 迁移
   awards?: ResumeAward[];

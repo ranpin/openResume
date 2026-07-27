@@ -147,6 +147,12 @@ function resumeText(d: ResumeData): string {
       parts.push(sp.name, ...(sp.tech || []), ...(sp.highlights || [])),
     );
   });
+  (d.internship || []).forEach((w) => {
+    parts.push(w.company, w.position, ...(w.highlights || []));
+    (w.projects || []).forEach((sp) =>
+      parts.push(sp.name, ...(sp.tech || []), ...(sp.highlights || [])),
+    );
+  });
   (d.projects || []).forEach((p) =>
     parts.push(p.name, ...(p.tech || []), ...(p.highlights || [])),
   );

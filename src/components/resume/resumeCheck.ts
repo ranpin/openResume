@@ -43,6 +43,7 @@ export function runChecks(d: ResumeData): CheckIssue[] {
   const b = d.basics;
   const edu = d.education || [];
   const work = d.work || [];
+  const internship = d.internship || [];
   const projects = d.projects || [];
   const skills = stripMd(d.skills || '');
   const awards = d.awards || [];
@@ -135,8 +136,8 @@ export function runChecks(d: ResumeData): CheckIssue[] {
     }
   });
 
-  // —— 工作 / 项目 ——
-  if (work.length === 0 && projects.length === 0) {
+  // —— 工作 / 实习 / 项目 ——
+  if (work.length === 0 && internship.length === 0 && projects.length === 0) {
     issues.push({
       id: 'no-exp',
       severity: 'warn',
@@ -151,6 +152,11 @@ export function runChecks(d: ResumeData): CheckIssue[] {
     work.forEach((w) =>
       (w.highlights || []).forEach((h) =>
         out.push({ text: h, where: w.company || '工作经历' }),
+      ),
+    );
+    internship.forEach((w) =>
+      (w.highlights || []).forEach((h) =>
+        out.push({ text: h, where: w.company || '实习经历' }),
       ),
     );
     projects.forEach((p) =>
@@ -173,6 +179,10 @@ export function runChecks(d: ResumeData): CheckIssue[] {
         const clean = (arr?: string[]) =>
           arr ? arr.filter((s) => stripMd(s)) : arr;
         (dd.work || []).forEach((w) => {
+          w.highlights = clean(w.highlights);
+          (w.projects || []).forEach((sp) => (sp.highlights = clean(sp.highlights)));
+        });
+        (dd.internship || []).forEach((w) => {
           w.highlights = clean(w.highlights);
           (w.projects || []).forEach((sp) => (sp.highlights = clean(sp.highlights)));
         });
@@ -254,6 +264,7 @@ export function runChecks(d: ResumeData): CheckIssue[] {
   const STD: Record<string, string[]> = {
     education: ['教育', '学历', 'education'],
     work: ['工作', '经历', '实习', 'work', 'experience'],
+    internship: ['实习', '经历', 'internship', 'work', 'experience'],
     projects: ['项目', 'project'],
     skills: ['技能', 'skill'],
   };

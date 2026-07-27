@@ -797,6 +797,15 @@ const buildBlocks = (
           <WorkEntry w={item} />
         ));
         break;
+      case 'internship':
+        addListSection(
+          'internship',
+          sec.icon,
+          sec.title,
+          data.internship,
+          ({ item }) => <WorkEntry w={item} />,
+        );
+        break;
       case 'projects':
         addListSection('proj', sec.icon, sec.title, data.projects, ({ item }) => (
           <ProjEntry p={item} />
@@ -908,6 +917,7 @@ const buildBlocks = (
       if (key === 'header' || key === 'summary') return 'basics';
       if (key.startsWith('edu')) return 'education';
       if (key.startsWith('work')) return 'work';
+      if (key.startsWith('internship')) return 'internship';
       if (key.startsWith('proj')) return 'projects';
       if (key.startsWith('act')) return 'activities';
       if (key.startsWith('custom')) return 'custom';
@@ -972,6 +982,19 @@ const SidebarLayout: React.FC<{
             </SectionTitle>
             <div className="space-y-3">
               {data.work.map((w, i) => (
+                <WorkEntry key={i} w={w} />
+              ))}
+            </div>
+          </section>
+        ) : null;
+      case 'internship':
+        return data.internship && data.internship.length > 0 ? (
+          <section key="internship">
+            <SectionTitle icon={sec.icon} theme={theme}>
+              {sec.title}
+            </SectionTitle>
+            <div className="space-y-3">
+              {data.internship.map((w, i) => (
                 <WorkEntry key={i} w={w} />
               ))}
             </div>

@@ -23,6 +23,13 @@ export const sanitizeResume = (d: ResumeData): ResumeData => {
       // 工作经历下的子项目同样清洗
       projects: w.projects ? w.projects.map(cleanProject) : w.projects,
     }));
+  if (c.internship)
+    c.internship = c.internship.map((w) => ({
+      ...w,
+      highlights: clean(w.highlights),
+      // 实习经历下的子项目同样清洗
+      projects: w.projects ? w.projects.map(cleanProject) : w.projects,
+    }));
   if (c.projects) c.projects = c.projects.map(cleanProject);
   if (typeof c.skills === 'string') {
     const t = c.skills.trim();

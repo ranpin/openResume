@@ -48,6 +48,21 @@ describe('computeCompleteness', () => {
     expect(r.missing).toHaveLength(0);
   });
 
+  it('counts internship toward the 工作/实习经历 check', () => {
+    const r = computeCompleteness({
+      ...empty,
+      basics: { name: '张三' },
+      internship: [
+        {
+          company: '某司',
+          position: '实习生',
+          highlights: ['参与核心链路开发，效率提升 30%'],
+        },
+      ],
+    });
+    expect(r.checks.find((c) => c.key === 'work')?.done).toBe(true);
+  });
+
   it('check weights sum to 100', () => {
     const total = computeCompleteness(empty).checks.reduce(
       (a, c) => a + c.weight,
