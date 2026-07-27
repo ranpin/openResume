@@ -12,6 +12,7 @@ export interface ResumeBasics {
   location?: string;
   birth?: string; // 出生年月
   political?: string; // 政治面貌
+  hometown?: string; // 籍贯
   website?: string;
   github?: string;
   summary?: string; // 个人简介 / 自我评价
@@ -85,6 +86,9 @@ export type ResumeTheme = 'blue' | 'emerald' | 'violet' | 'rose' | 'slate';
 // - dot / slash / bar：用 · / / / | 连接成一组
 export type ResumeFieldSeparator = 'justify' | 'dot' | 'slash' | 'bar';
 
+// 个人信息（头部）板块的对齐方式：左 / 中 / 右。缺省随证件照——有照片左对齐、无照片居中。
+export type ResumeHeaderAlign = 'left' | 'center' | 'right';
+
 // 全局排版设置：作用于整份简历（字号、行距、块间距、页边距）。
 // 通过 CSS 变量下发到简历根节点，缺省时用文档默认值。
 export interface ResumeSettings {
@@ -95,6 +99,7 @@ export interface ResumeSettings {
   fontFamily?: string; // 正文字体 key（见 resumeFonts.FONT_OPTIONS），缺省沿用站点默认
   headerLines?: 1 | 2; // 条目标题行数：1=单行（字段同行），2=双行（主标题+时间一行、其余字段次行）；默认 2
   fieldSeparator?: ResumeFieldSeparator; // 标题行字段排列，默认 dot（·）
+  headerAlign?: ResumeHeaderAlign; // 个人信息板块对齐，缺省随证件照（有照片左、无照片中）
 }
 
 // 可编辑的模块（分区）种类。顺序、标题、显隐由 sections 配置驱动。

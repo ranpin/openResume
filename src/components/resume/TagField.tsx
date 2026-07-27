@@ -77,14 +77,14 @@ const TagField: React.FC<{
                 e.stopPropagation();
                 onChange(items.filter((_, j) => j !== i));
               }}
-              className="flex h-4 w-4 items-center justify-center rounded-full text-sage-400 transition-colors hover:bg-sage-200 hover:text-sage-900"
+              className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-sage-500 transition-colors hover:bg-red-100 hover:text-red-600"
             >
               <svg
                 viewBox="0 0 16 16"
-                className="h-2.5 w-2.5"
+                className="h-3 w-3"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.5"
               >
                 <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
               </svg>
