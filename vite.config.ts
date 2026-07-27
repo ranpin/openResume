@@ -2,9 +2,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// GitHub Pages 项目页：部署在 ranpin.github.io/resume/，base 必须为 '/resume/'
+// GitHub Pages 项目页：部署在 ranpin.github.io/openResume/，base 必须为 '/openResume/'
 export default defineConfig({
-  base: '/resume/',
+  base: '/openResume/',
   plugins: [react()],
   test: {
     globals: true,
