@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from '../Icon';
 import ToolbarPopover from './ToolbarPopover';
 import { FONT_OPTIONS, fontStack } from './resumeFonts';
@@ -56,6 +56,15 @@ const LayoutPanel: React.FC<LayoutPanelProps> = ({ data, update }) => {
     update((d) => {
       d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), [k]: v };
     });
+  // 字号输入框的本地编辑态（null = 未在编辑，回显设置值）；
+  // 输入合法数值即时生效（支持半数档如 10.5），越界按 6–24pt 收敛，失焦后回显实际值
+  const [ptText, setPtText] = useState<string | null>(null);
+  const commitPt = (raw: string) => {
+    const parsed = parseFloat(raw);
+    if (!Number.isFinite(parsed)) return;
+    const pt = Math.min(24, Math.max(6, parsed));
+    setSetting('fontScale', +(pt / BODY_BASE_PT).toFixed(4));
+  };
   const setFontFamily = (v: string) =>
     update((d) => {
       d.settings = {
@@ -150,22 +159,27 @@ const LayoutPanel: React.FC<LayoutPanelProps> = ({ data, update }) => {
                   {scaleToPt(settings.fontScale)} pt
                 </span>
               </span>
-              <select
-                value={String(scaleToPt(settings.fontScale))}
-                onChange={(e) =>
-                  setSetting(
-                    'fontScale',
-                    +(parseInt(e.target.value, 10) / BODY_BASE_PT).toFixed(4),
-                  )
-                }
-                className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none cursor-pointer hover:border-sage-400 focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
-              >
+              <input
+                type="text"
+                inputMode="decimal"
+                list="rs-font-size-pts"
+                title="可直接输入磅值（如 10.5），范围 6–24"
+                value={ptText ?? String(scaleToPt(settings.fontScale))}
+                onChange={(e) => {
+                  setPtText(e.target.value);
+                  commitPt(e.target.value);
+                }}
+                onBlur={() => setPtText(null)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
+                className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none hover:border-sage-400 focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
+              />
+              <datalist id="rs-font-size-pts">
                 {fontSizeOptions(scaleToPt(settings.fontScale)).map((pt) => (
-                  <option key={pt} value={String(pt)}>
-                    {pt}
-                  </option>
+                  <option key={pt} value={String(pt)} />
                 ))}
-              </select>
+              </datalist>
             </label>
             <Slider
               label="行间距"
