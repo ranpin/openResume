@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import Icon from '../Icon';
-import { publishFile } from './github';
+import { publishResume } from './github';
+import { DATA_SOURCE } from '../../data/source';
 import { resumeToYaml, normalizeResume } from './resumeIo';
 import { useResumeStore } from '../../store/useResumeStore';
 import type { ResumeData } from '../../types/resume';
 
 /**
- * 一键发布到线上：把当前简历 YAML 提交到仓库 content/resumes/<id>.yaml，
- * GitHub Actions 自动构建部署，约 1 分钟后线上更新——免手动提交。
+ * 一键发布到线上：把当前简历 YAML 提交到数据仓库 resumes/<id>.yaml，
+ * 站点运行时从数据仓库拉取，约 1 分钟后线上更新——免手动提交。
  * BYO Token：用户自带 GitHub 令牌，仅存本地浏览器，不入库、仅所有者本人用。
  */
 
@@ -57,15 +58,19 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const path = `content/resumes/${resumeId}.yaml`;
-      const { commitUrl } = await publishFile({
+      const { commitUrl } = await publishResume({
         token: token.trim(),
-        path,
-        content: resumeToYaml(data),
-        message: `chore(resume): 更新「${data.label}」`,
+        resumeId,
+        yaml: resumeToYaml(data),
+        label: data.label,
       });
       markPublished(resumeId, normalizeResume(data));
-      setDoneUrl(commitUrl || 'https://github.com/ranpin/resume/actions');
+      setDoneUrl(
+        commitUrl ||
+          (DATA_SOURCE
+            ? `https://github.com/${DATA_SOURCE.owner}/${DATA_SOURCE.repo}/commits`
+            : ''),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : '发布失败，请重试');
     } finally {
@@ -96,7 +101,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
               <div className="flex items-start gap-3 rounded-xl bg-green-50 border border-green-100 p-4">
                 <Icon name="check" className="text-green-600 mt-0.5" />
                 <div className="text-sm text-green-900/80 leading-relaxed">
-                  已提交到仓库，GitHub Actions 正在自动构建，
+                  已提交到数据仓库，站点运行时自动拉取，
                   <strong>约 1 分钟后线上更新</strong>（刷新页面即可看到）。
                 </div>
               </div>
@@ -124,8 +129,8 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
                 <Icon name="lightbulb" className="text-sage-500 mt-0.5" />
                 <p className="text-sm text-sage-900/80 leading-relaxed">
                   将「<span className="font-medium">{data.label}</span>
-                  」提交到 <code>content/resumes/{resumeId}.yaml</code>
-                  ，自动部署到线上——免手动提交。
+                  」提交到数据仓库 <code>resumes/{resumeId}.yaml</code>
+                  ，线上运行时自动拉取——免手动提交。
                 </p>
               </div>
 
@@ -152,7 +157,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500"
                 />
                 <p className="mt-1 text-xs text-gray-400 leading-relaxed">
-                  需要对本仓库的 <strong>Contents 读写</strong>权限（fine-grained
+                  需要对数据仓库的 <strong>Contents 读写</strong>权限（fine-grained
                   token 勾选 Contents: Read and write，或经典 token 勾选 repo）。
                   令牌仅保存在你本地浏览器、直连 GitHub，不上传服务器、不进仓库。
                 </p>

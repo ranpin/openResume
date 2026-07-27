@@ -5,7 +5,7 @@ description: 在 ranpin/resume 仓库（简历中心 SPA）里做开发、改模
 
 # resume 仓库工作指南
 
-简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/resume/（`base: '/resume/'` 是项目页必需，勿改）。内容驱动：`content/` 下的 YAML（简历见 `content/resumes/README.md`）。
+简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/resume/（`base: '/resume/'` 是项目页必需，勿改）。**代码与数据隔离**：本仓库是纯应用、不含个人数据；内容运行时从独立数据仓库 [ranpin/resume-data](https://github.com/ranpin/resume-data) 拉取，草稿持久化在本机 IndexedDB（见「数据架构」一节）。
 
 ## 主色（与主站一致）
 
@@ -16,19 +16,27 @@ description: 在 ranpin/resume 仓库（简历中心 SPA）里做开发、改模
 ```bash
 npm run typecheck          # tsc --noEmit
 npm run lint               # eslint --max-warnings 0 --report-unused-disable-directives
-npx vitest run             # 11 个测试文件，渲染测试用 @testing-library/react
+npx vitest run             # 16 个测试文件，渲染测试用 @testing-library/react
 ```
 
 本地开发：`npm run dev`（http://localhost:5173/resume/）。浏览器验证用 Playwright：
 `PYTHONPATH=$HOME/.local/lib/python3.13/site-packages python3`，`p.chromium.launch(channel="chrome", headless=True)`。
-注意：验证时点击编辑器会写 localStorage 草稿（key `ranpin-resume-drafts`），脚本里先快照、结束后恢复。
+注意：验证时点击编辑器会写 IndexedDB 草稿（库 `ranpin-resume`、store `kv`、key `ranpin-resume-drafts`），脚本里要重置状态须 `indexedDB.deleteDatabase('ranpin-resume')`（清 localStorage 已不够）；内容来自远程数据仓库，首屏有异步加载态，断言前等简历渲染出来。
+
+## 数据架构（代码 / 数据隔离）
+
+- **数据源配置 `src/data/source.ts`**：`DATA_SOURCE = { owner, repo, branch } | null`，本仓库指向 `ranpin/resume-data`；`null` = 纯本地模式（内容恒空、发布入口隐藏、空态文案切到 AI 生成/导入引导）。`DATA_BASE_URL` 派生 raw.githubusercontent.com 根。**fork 使用者只改这一个文件**。
+- **远程加载 `src/data/content.ts`**：`loadContent()` = 拉 `index.json` 清单 → 并行拉各 YAML（`cache: 'no-store'`）→ 解析。id = 文件名 slug；按 slug 排序；单文件失败跳过并 warn（容忍清单过期）；清单失败抛错。简历载入经 `migrateResume`。
+- **`useContentStore`**：status `loading | ready | error` + `fromCache`。拉取成功即写 IndexedDB 缓存（key `content-cache`）；失败回退该缓存并置 `fromCache`，缓存也没有才 error。`load()` 有模块级 inflight 去重（StrictMode 双挂载安全）。
+- **草稿持久化 `useResumeStore`**：zustand persist + `idbStateStorage`（`src/store/idb.ts`：IndexedDB 库 `ranpin-resume` / store `kv`，单项操作失败降级 localStorage）。`skipHydration`：`ResumeSection` 挂载后先 `migrateLegacyKeys([DRAFTS_STORAGE_KEY])`（旧 localStorage 键一次性迁入）再 `rehydrate()` → `setHydrated(true)`。全量迁移工具 `store/backup.ts`：编辑器导出 popover「备份全部数据（JSON）」下载、查看器「导入备份」合并恢复（按 id 覆盖，不清空）。
+- **发布 `components/resume/github.ts`**：浏览器直连数据仓库 GitHub Contents API（BYO Token，存 localStorage `ranpin-github-token`）。`publishResume` = PUT `resumes/<id>.yaml`（更新已有文件带 sha）；新建文件后再二次提交把路径登记进 `index.json`。`publishEnabled = DATA_SOURCE !== null` 控制 UI 显隐。数据仓库提交约 1 分钟后（raw 刷新）线上可见，**不经 Actions 构建**。
 
 ## 编辑器界面结构（超级简历式）
 
 全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
 
-- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「排版」含字号/行高/间距滑块、条目字段样式（headerLines/fieldSeparator）与「个人信息对齐」`settings.headerAlign`（left/center/right，缺省随证件照：有照片左、无照片中）；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除模块——自定义模块真删除，内置模块 trash=隐藏、经「已隐藏」恢复）→「智能一页」（开关：压缩塞一页 / 再点恢复）+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML）→「翻译成英文」（懒加载 `AiTranslatePanel`，成功经 `onTranslated` 关编辑器回查看器展示英文草稿）→「发布到线上」→「重置」（dirty 时）→「关闭」。
-- 查看器首页（`ResumeSection.tsx`）：顶部一行 `flex justify-between`——左为一级切换（我的简历 / 详细经历），右为创建级入口 AI 生成（primary）/ 导入简历（与切换同级，两个视图都可见）。**点简历横排卡片直接进编辑器**（`setActiveId + setEditing`），无独立「编辑」按钮。文档级操作（编辑 / 翻译成英文 / 发布 / 导出 PDF·Word·YAML / 重置）一律在编辑器工具栏内——勿移回查看器。
+- 工具栏从左到右：标题（编辑简历 · 名称 + 未发布 badge）→「模板」「配色」「排版」「模块」四个 `ToolbarPopover` 下拉面板（render-prop `children(close)`，选中即关；外点/Esc 关闭；「排版」含字号/行高/间距滑块、条目字段样式（headerLines/fieldSeparator）与「个人信息对齐」`settings.headerAlign`（left/center/right，缺省随证件照：有照片左、无照片中）；「模块」= 模块管理：拖拽/上下箭头调序、改名、显隐、删除模块——自定义模块真删除，内置模块 trash=隐藏、经「已隐藏」恢复）→「智能一页」（开关：压缩塞一页 / 再点恢复）+「共 N 页」+ 压缩提示 → 撤销/重做 →「预览」切换（隐藏左栏、预览 `md:col-span-2` 占满）→「保存」→「导出」popover（PDF=window.print / Word=懒加载 `exportWord` / YAML / 全量 JSON 备份 `store/backup.ts`）→「翻译成英文」（懒加载 `AiTranslatePanel`，成功经 `onTranslated` 关编辑器回查看器展示英文草稿）→「发布到线上」（纯本地模式自动隐藏，见数据架构）→「重置」（dirty 时）→「关闭」。
+- 查看器首页（`ResumeSection.tsx`）：顶部一行 `flex justify-between`——左为一级切换（我的简历 / 详细经历），右为创建级入口 AI 生成（primary）/ 导入简历 / 导入备份（合并恢复 IndexedDB 草稿，与切换同级，两个视图都可见）。**点简历横排卡片直接进编辑器**（`setActiveId + setEditing`），无独立「编辑」按钮。文档级操作（编辑 / 翻译成英文 / 发布 / 导出 PDF·Word·YAML·JSON 备份 / 重置）一律在编辑器工具栏内——勿移回查看器。内容来自 `useContentStore`，查看器须处理四态：loading 转圈 / error 重试卡 / 空态（本地模式文案不同）/ 离线缓存横幅（`fromCache`）。
 - 撤销/重做：单一入口 `update(fn)`——600ms 时间窗合并（连续输入/拖拽/智能一页多步各算一个撤销点），undoStack/redoStack 为 ref（上限 100），按钮 disabled 直接读 ref（靠 setDraft 触发重渲染）。**新增任何改动数据的路径必须走 `update`**，否则破坏撤销栈。
 - 预览缩放必须打印安全：`PreviewFit.tsx` 包住预览面板（编辑器 + 查看器），ResizeObserver 算 `scale = min(1, 可用宽 / 794)`，经 CSS 变量 `--preview-fit` / `--preview-fit-h` + transform 缩放；`resume.css` 里相关样式只在 `@media screen` 生效，`@media print` 下 `!important` 复位原尺寸——「导出 PDF」是 window.print()，会打印预览容器内的文档，缩放绝不能带进打印。不要把这套缩放改成内联样式或套到打印链路。
 
@@ -80,9 +88,12 @@ Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上
 - `skills` 是 Markdown 富文本字符串（同 `summary`），不是数组：旧版分组数组数据由 `migrateResume()`（`resumeIo.ts`）在四个入口兜底转换（content.ts 加载、编辑器/查看器数据派生、AI generate/parse/translate 返回）。新写技能相关代码不要假设数组。
 - 兴趣爱好与校园活动/资格证书一致：编辑框默认隐藏，点分区「添加」才出现；标签清空后自动重新隐藏（`interestsOpen` state）。兴趣标签删除有两条路：单个标签 ×（`TagField`，hover 变红，title「移除」——TagField 测试断言这个 title）与分区头部「清空」（`SectionHeader` 的 `onClear`，trash 图标，仅有内容时显示，title「删除该模块下的全部内容」）。
 - `basics.hometown`（籍贯，可选）：输入框在基本信息区政治面貌之后；`ContactList` 以 `home` 图标输出，排在 location 之后，随 `headerAlign` 对齐。
+- zustand persist 的 storage 是**异步** IndexedDB（`idbStateStorage`，`getItem` 返回 Promise 合法）；单测用 `fake-indexeddb/auto`（devDep）。清状态要 `indexedDB.deleteDatabase('ranpin-resume')` + `localStorage.clear()`——只清 localStorage 清不掉草稿。
+- 查看器首屏是异步的（远程拉取）：`ResumeSection` 有 loading / error / 空态 / 离线横幅四分支，E2E 断言前等数据渲染，别只测 ready 路径。
 
 ## 部署
 
 推 `main` → Actions 构建发 Pages。本机推送需：`git config http.version HTTP/1.1` + 重试循环
 （`for i in 1..6; do git push origin main && break || sleep 8; done`）。提交按用户惯例带 `--no-verify`。
 Pages CDN 部署后约 10 分钟可能回旧 bundle：用 dist 里的 bundle hash 对比线上 index.html 验证。
+**内容更新不走这条链路**：数据仓库 resume-data 的提交约 1 分钟刷新 raw 即线上生效，无构建。

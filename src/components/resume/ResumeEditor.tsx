@@ -34,6 +34,8 @@ import {
   EXAMPLE_WORK,
 } from './resumeExamples';
 import { useResumeStore } from '../../store/useResumeStore';
+import { publishEnabled } from './github';
+import { downloadBackup } from '../../store/backup';
 
 const PublishDialog = lazy(() => import('./PublishDialog'));
 const AiPolishPanel = lazy(() => import('./AiPolishPanel'));
@@ -1163,7 +1165,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             icon="download"
             label="导出"
             align="right"
-            title="导出 PDF / Word / 数据"
+            title="导出 PDF / Word / 数据 / 备份"
             panelClassName="w-48"
           >
             {(close) => (
@@ -1201,6 +1203,17 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                   <Icon name="download" className="text-gray-400" />
                   导出数据（YAML）
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadBackup();
+                    close();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Icon name="save" className="text-gray-400" />
+                  备份全部数据（JSON）
+                </button>
               </div>
             )}
           </ToolbarPopover>
@@ -1213,13 +1226,15 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <Icon name="language" />
             <span className="hidden sm:inline">翻译成英文</span>
           </button>
-          <button
-            onClick={() => setPublishOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
-          >
-            <Icon name="paper-plane" />
-            <span className="hidden sm:inline">发布到线上</span>
-          </button>
+          {publishEnabled && (
+            <button
+              onClick={() => setPublishOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 hover:bg-gray-50"
+            >
+              <Icon name="paper-plane" />
+              <span className="hidden sm:inline">发布到线上</span>
+            </button>
+          )}
           {dirty && (
             <button
               onClick={() => resetDraft(resumeId)}
@@ -2141,8 +2156,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             要点/简介支持富文本工具栏：加粗/斜体/下划线/删除线/代码、序列号/箭头列表/引用/链接、
             <strong>字号</strong>、<strong>颜色</strong>、<strong>对齐(左/中/右)</strong>；拖动条目左侧
             <Icon name="arrows-alt" className="mx-0.5" />
-            可排序。改动<strong>实时自动保存</strong>在本浏览器（刷新不丢）；点「保存」可确认。要正式发布到线上，请「导出数据」并把
-            YAML 提交到 content/resumes/。
+            可排序。改动<strong>实时自动保存</strong>在本浏览器（刷新不丢）；点「保存」可确认。要正式发布到线上，点工具栏
+            「发布到线上」（一键提交到数据仓库）。
           </p>
         </div>
         )}

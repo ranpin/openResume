@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Icon from './Icon';
-import { projects, publications, internships } from '../data/content';
+import { useContentStore } from '../store/useContentStore';
 import type { ContentItem } from '../types';
 
 interface Recommendation {
@@ -15,12 +15,6 @@ interface SmartRecommendationsProps {
   currentType: string;
   onItemClick: (item: ContentItem, type: string) => void;
 }
-
-const COLLECTIONS: { items: ContentItem[]; type: string }[] = [
-  { items: projects as ContentItem[], type: 'project' },
-  { items: publications as ContentItem[], type: 'publication' },
-  { items: internships as ContentItem[], type: 'internship' },
-];
 
 const TYPE_INFO: Record<
   string,
@@ -60,6 +54,18 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   onItemClick,
 }) => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const projects = useContentStore((s) => s.projects);
+  const publications = useContentStore((s) => s.publications);
+  const internships = useContentStore((s) => s.internships);
+  const collections = useMemo(
+    () =>
+      [
+        { items: projects as ContentItem[], type: 'project' },
+        { items: publications as ContentItem[], type: 'publication' },
+        { items: internships as ContentItem[], type: 'internship' },
+      ] as { items: ContentItem[]; type: string }[],
+    [projects, publications, internships],
+  );
 
   useEffect(() => {
     if (!currentItem) {
@@ -90,7 +96,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
 
     const recs: Recommendation[] = [];
 
-    COLLECTIONS.forEach(({ items, type }) => {
+    collections.forEach(({ items, type }) => {
       items.forEach((raw) => {
         const item = raw as unknown as Record<string, unknown>;
         if (item.id === currentItem.id && type.includes(currentType)) return;
@@ -141,7 +147,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
     });
 
     setRecommendations(recs.sort((a, b) => b.score - a.score).slice(0, 3));
-  }, [currentItem, currentType]);
+  }, [currentItem, currentType, collections]);
 
   if (recommendations.length === 0) return null;
 

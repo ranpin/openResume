@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useRef, useState, useMemo, lazy, Suspense } from 'react';
 import Icon from './Icon';
 import ResumeCatalog from './ResumeCatalog';
 import ResumeDocument from './resume/ResumeDocument';
 import PreviewFit from './resume/PreviewFit';
 import { migrateResume, normalizeResume } from './resume/resumeIo';
-import { resumes } from '../data/content';
-import { useResumeStore } from '../store/useResumeStore';
+import { useContentStore } from '../store/useContentStore';
+import { DATA_SOURCE } from '../data/source';
+import { migrateLegacyKeys } from '../store/idb';
+import { restoreBackup } from '../store/backup';
+import { useResumeStore, DRAFTS_STORAGE_KEY } from '../store/useResumeStore';
 import type { Project, Publication, Internship } from '../types';
 import type { ResumeData } from '../types/resume';
 
@@ -52,6 +55,8 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const [editing, setEditing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [backupToast, setBackupToast] = useState<string | null>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
 
   const drafts = useResumeStore((s) => s.drafts);
   const publishedMap = useResumeStore((s) => s.published);
@@ -60,13 +65,29 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const setActiveId = useResumeStore((s) => s.setActiveId);
   const setHydrated = useResumeStore((s) => s.setHydrated);
 
-  // 水合后再从 localStorage 载入草稿，避免预渲染 / 水合不一致
-  useEffect(() => {
-    useResumeStore.persist.rehydrate();
-    setHydrated(true);
-  }, [setHydrated]);
+  // 远程内容（数据仓库）：简历列表与经历库
+  const resumes = useContentStore((s) => s.resumes);
+  const contentStatus = useContentStore((s) => s.status);
+  const contentError = useContentStore((s) => s.error);
+  const fromCache = useContentStore((s) => s.fromCache);
+  const loadContent = useContentStore((s) => s.load);
 
-  // 草稿型简历：仅存在于本地草稿、不在 content/resumes 里（如 AI 翻译生成的英文版）。
+  // 水合后再从 IndexedDB 载入草稿，避免预渲染 / 水合不一致；同时拉取远程内容。
+  // 旧版 localStorage 草稿先一次性迁入 IndexedDB，再 rehydrate
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await migrateLegacyKeys([DRAFTS_STORAGE_KEY]);
+      await useResumeStore.persist.rehydrate();
+      if (!cancelled) setHydrated(true);
+    })();
+    loadContent();
+    return () => {
+      cancelled = true;
+    };
+  }, [setHydrated, loadContent]);
+
+  // 草稿型简历：仅存在于本地草稿、不在数据仓库里（如 AI 翻译生成的英文版）。
   // 水合后合并进切换栏，使其可查看 / 编辑 / 导出 / 发布。
   const draftOnly: { id: string; label: string }[] = hydrated
     ? Object.keys(drafts)
@@ -99,6 +120,20 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
     return true;
   };
   const hasDraft = !!(selectedId && hydrated && isDirty(selectedId));
+
+  // 导入备份：合并式恢复草稿（见 store/backup.ts）
+  const handleBackupFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const count = restoreBackup(await file.text());
+      setBackupToast(`导入成功，共 ${count} 份简历草稿`);
+    } catch (err) {
+      setBackupToast(err instanceof Error ? err.message : '导入失败');
+    }
+    window.setTimeout(() => setBackupToast(null), 3000);
+  };
 
   return (
     <div>
@@ -137,23 +172,66 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             label="导入简历"
             onClick={() => setImportOpen(true)}
           />
+          <ToolbarButton
+            icon="upload"
+            label="导入备份"
+            onClick={() => backupInputRef.current?.click()}
+          />
         </div>
       </div>
+      <input
+        ref={backupInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={handleBackupFile}
+      />
 
-      {view === 'catalog' ? (
+      {contentStatus === 'loading' ? (
+        <div className="text-center py-16 text-gray-400">
+          <Icon name="spinner" spin className="text-3xl mb-4 text-sage-500" />
+          <p>正在加载简历数据…</p>
+        </div>
+      ) : contentStatus === 'error' ? (
+        <div className="text-center py-16">
+          <Icon
+            name="exclamation-triangle"
+            className="text-4xl mb-4 text-red-400"
+          />
+          <p className="mb-1 text-gray-600">简历数据加载失败</p>
+          <p className="mb-4 text-sm text-gray-400">{contentError}</p>
+          <button
+            onClick={() => loadContent()}
+            className="inline-flex items-center gap-2 rounded-lg bg-sage-600 px-4 py-2 text-sm font-medium text-white hover:bg-sage-700"
+          >
+            <Icon name="sync-alt" />
+            重试
+          </button>
+        </div>
+      ) : view === 'catalog' ? (
         <ResumeCatalog
           resumeCategory={resumeCategory}
           onArticleClick={onArticleClick}
           onPaperClick={onPaperClick}
           onInternshipClick={onInternshipClick}
         />
-      ) : resumes.length === 0 ? (
+      ) : allResumes.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <Icon name="file-alt" className="text-4xl mb-4" />
-          <p>暂无简历，请在 content/resumes/ 添加一份 YAML。</p>
+          <p>
+            {DATA_SOURCE
+              ? '数据仓库暂无简历，发布一份后即可在这里展示。'
+              : '还没有简历，用右上角「AI 生成」或「导入简历」创建第一份。'}
+          </p>
         </div>
       ) : (
         <div>
+          {fromCache && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500">
+              <Icon name="wifi-off" className="shrink-0" />
+              <span>网络不可用，当前展示本机离线缓存的数据。</span>
+            </div>
+          )}
           {/* 简历横排：多份简历切换（含 AI 翻译生成的英文版草稿）*/}
           <div className="mb-5 flex flex-wrap gap-3">
             {allResumes.map((r) => {
@@ -239,6 +317,16 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
         <Suspense fallback={null}>
           <AiImportPanel onClose={() => setImportOpen(false)} />
         </Suspense>
+      )}
+
+      {/* 备份导入反馈 */}
+      {backupToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-900 text-white text-sm shadow-lg">
+          <Icon
+            name={backupToast.startsWith('导入成功') ? 'check' : 'exclamation-triangle'}
+          />
+          {backupToast}
+        </div>
       )}
     </div>
   );
