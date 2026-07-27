@@ -5,7 +5,7 @@ description: 在 ranpin/openResume 仓库（简历中心 SPA）里做开发、�
 
 # openResume 仓库工作指南
 
-简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/openResume/（`base: '/openResume/'` 是项目页必需，勿改）。**代码与数据隔离**：本仓库是纯应用、不含个人数据；内容运行时从独立数据仓库 [ranpin/resume-data](https://github.com/ranpin/resume-data) 拉取，草稿持久化在本机 IndexedDB（见「数据架构」一节）。
+简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/openResume/（`base: '/openResume/'` 是项目页必需，勿改）。**代码与数据隔离**：本仓库是纯应用、不含个人数据；内容运行时从独立数据仓库 [ranpin/openResume-data](https://github.com/ranpin/openResume-data) 拉取，草稿持久化在本机 IndexedDB（见「数据架构」一节）。
 
 ## 主色（与主站一致）
 
@@ -25,7 +25,7 @@ npx vitest run             # 16 个测试文件，渲染测试用 @testing-libra
 
 ## 数据架构（代码 / 数据隔离）
 
-- **数据源配置 `src/data/source.ts`**：`DATA_SOURCE = { owner, repo, branch } | null`，本仓库指向 `ranpin/resume-data`；`null` = 纯本地模式（内容恒空、发布入口隐藏、空态文案切到 AI 生成/导入引导）。`DATA_BASE_URL` 派生 raw.githubusercontent.com 根。**fork 使用者只改这一个文件**。
+- **数据源配置 `src/data/source.ts`**：`DATA_SOURCE = { owner, repo, branch } | null`，本仓库指向 `ranpin/openResume-data`；`null` = 纯本地模式（内容恒空、发布入口隐藏、空态文案切到 AI 生成/导入引导）。`DATA_BASE_URL` 派生 raw.githubusercontent.com 根。**fork 使用者只改这一个文件**。
 - **远程加载 `src/data/content.ts`**：`loadContent()` = 拉 `index.json` 清单 → 并行拉各 YAML（`cache: 'no-store'`）→ 解析。id = 文件名 slug；按 slug 排序；单文件失败跳过并 warn（容忍清单过期）；清单失败抛错。简历载入经 `migrateResume`。
 - **`useContentStore`**：status `loading | ready | error` + `fromCache`。拉取成功即写 IndexedDB 缓存（key `content-cache`）；失败回退该缓存并置 `fromCache`，缓存也没有才 error。`load()` 有模块级 inflight 去重（StrictMode 双挂载安全）。
 - **草稿持久化 `useResumeStore`**：zustand persist + `idbStateStorage`（`src/store/idb.ts`：IndexedDB 库 `ranpin-resume` / store `kv`，单项操作失败降级 localStorage）。`skipHydration`：`ResumeSection` 挂载后先 `migrateLegacyKeys([DRAFTS_STORAGE_KEY])`（旧 localStorage 键一次性迁入）再 `rehydrate()` → `setHydrated(true)`。全量迁移工具 `store/backup.ts`：编辑器导出 popover「备份全部数据（JSON）」下载、查看器「导入备份」合并恢复（按 id 覆盖，不清空）。
@@ -96,6 +96,6 @@ Paginator 经 `onPages(count)` 上报页数（ref 持有回调、仅变化时上
 推 `main` → Actions 构建发 Pages。本机推送需：`git config http.version HTTP/1.1` + 重试循环
 （`for i in 1..6; do git push origin main && break || sleep 8; done`）。提交按用户惯例带 `--no-verify`。
 Pages CDN 部署后约 10 分钟可能回旧 bundle：用 dist 里的 bundle hash 对比线上 index.html 验证。
-**内容更新不走这条链路**：数据仓库 resume-data 的提交约 1 分钟刷新 raw 即线上生效，无构建。
+**内容更新不走这条链路**：数据仓库 openResume-data 的提交约 1 分钟刷新 raw 即线上生效，无构建。
 
 产物结构（2026-07 审计）：主块 ~601 kB（gzip ~189 kB）= react-dom + js-yaml + markdown 链（react-markdown/parse5/micromark，查看器首屏渲染简历正文必需，**勿为此把 ResumeDocument/RichText 改懒加载**——会 suspend 简历主体）+ lucide（已 tree-shake）；重块均已懒加载：exportWord/docx ~373 kB、GlobalModals（含 highlight.js）~194 kB、ResumeEditor ~77 kB、AI 面板各 ~4–7 kB。Inter 字体只引 `@fontsource/inter/latin-{300,400,500,600}.css` + `latin-ext-*`（中文走系统回落；加回其他子集见 `main.tsx` 注释）。

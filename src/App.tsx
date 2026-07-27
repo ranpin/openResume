@@ -7,7 +7,7 @@ import type { Project, Publication, Internship, ContentItem } from './types';
 // 经历库详情弹窗仅在打开时才需要（含 Markdown + 代码高亮），按需加载
 const GlobalModals = lazy(() => import('./components/GlobalModals'));
 
-// 简历中心（独立应用）。主站以入口卡片链接到这里（ranpin.github.io/resume/）。
+// 简历中心（独立应用）。主站以入口卡片链接到这里（ranpin.github.io/openResume/）。
 const MAIN_SITE = 'https://ranpin.github.io/';
 
 const App = () => {
