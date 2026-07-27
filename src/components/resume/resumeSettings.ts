@@ -38,3 +38,22 @@ export const HEADER_ALIGN_OPTIONS: { id: ResumeHeaderAlign; label: string; icon:
 
 // 「智能一页」压缩下限（与对应滑块的最小值一致）
 export const FIT_MIN = { fontScale: 0.8, lineHeight: 1.2, blockGap: 6, pageMargin: 24 };
+
+// 排版预设：一键联动字号/行距/模块间距/页边距（紧凑 9pt / 默认 10pt / 宽松 11pt）
+export const LAYOUT_PRESETS: {
+  id: string;
+  label: string;
+  settings: typeof SETTING_DEFAULTS;
+}[] = [
+  {
+    id: 'compact',
+    label: '紧凑',
+    settings: { fontScale: 0.9231, lineHeight: 1.3, blockGap: 10, pageMargin: 32 },
+  },
+  { id: 'default', label: '默认', settings: { ...SETTING_DEFAULTS } },
+  {
+    id: 'loose',
+    label: '宽松',
+    settings: { fontScale: 1.1282, lineHeight: 1.8, blockGap: 22, pageMargin: 56 },
+  },
+];
