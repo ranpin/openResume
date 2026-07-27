@@ -1,11 +1,11 @@
 ---
 name: resume
-description: 在 ranpin/resume 仓库（简历中心 SPA）里做开发、改模板/排版、调编辑器或部署时使用。包含架构不变量、验证命令、部署流程与已踩过的坑。
+description: 在 ranpin/openResume 仓库（简历中心 SPA）里做开发、改模板/排版、调编辑器或部署时使用。包含架构不变量、验证命令、部署流程与已踩过的坑。
 ---
 
-# resume 仓库工作指南
+# openResume 仓库工作指南
 
-简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/resume/（`base: '/resume/'` 是项目页必需，勿改）。**代码与数据隔离**：本仓库是纯应用、不含个人数据；内容运行时从独立数据仓库 [ranpin/resume-data](https://github.com/ranpin/resume-data) 拉取，草稿持久化在本机 IndexedDB（见「数据架构」一节）。
+简历中心：Vite 5 + React 18 + TS + Tailwind 3 + Zustand 的纯静态 SPA，部署在 https://ranpin.github.io/openResume/（`base: '/openResume/'` 是项目页必需，勿改）。**代码与数据隔离**：本仓库是纯应用、不含个人数据；内容运行时从独立数据仓库 [ranpin/resume-data](https://github.com/ranpin/resume-data) 拉取，草稿持久化在本机 IndexedDB（见「数据架构」一节）。
 
 ## 主色（与主站一致）
 
@@ -19,7 +19,7 @@ npm run lint               # eslint --max-warnings 0 --report-unused-disable-dir
 npx vitest run             # 16 个测试文件，渲染测试用 @testing-library/react
 ```
 
-本地开发：`npm run dev`（http://localhost:5173/resume/）。浏览器验证用 Playwright：
+本地开发：`npm run dev`（http://localhost:5173/openResume/）。浏览器验证用 Playwright：
 `PYTHONPATH=$HOME/.local/lib/python3.13/site-packages python3`，`p.chromium.launch(channel="chrome", headless=True)`。
 注意：验证时点击编辑器会写 IndexedDB 草稿（库 `ranpin-resume`、store `kv`、key `ranpin-resume-drafts`），脚本里要重置状态须 `indexedDB.deleteDatabase('ranpin-resume')`（清 localStorage 已不够）；内容来自远程数据仓库，首屏有异步加载态，断言前等简历渲染出来。
 
