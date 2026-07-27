@@ -74,7 +74,7 @@ const LANGUAGE_LEVELS = [
 ];
 
 /**
- * 超级简历式简历编辑器：左侧分区表单，右侧实时预览。
+ * 简历编辑器：左侧分区表单，右侧实时预览。
  * 所有改动写入 useResumeStore 的本地草稿（IndexedDB，刷新不丢）。
  * 以 lazy + Suspense 加载，且只在客户端打开，SSG 预渲染不涉及。
  */
@@ -255,7 +255,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const [publishOpen, setPublishOpen] = useState(false);
   // 翻译成英文版面板（文档级全局功能，从查看器工具条移入编辑器工具栏）
   const [translateOpen, setTranslateOpen] = useState(false);
-  // 预览模式：隐藏左侧表单、预览占满（超级简历式全屏预览）
+  // 预览模式：隐藏左侧表单、预览占满（全屏预览）
   const [previewMode, setPreviewMode] = useState(false);
   // 兴趣爱好编辑框：默认收起，点「添加」才展开（与其他条目式模块一致）
   const [interestsOpen, setInterestsOpen] = useState(false);
@@ -724,7 +724,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       </div>
 
       {/* 双栏主体：表单左、预览右。md(768px) 起即左右布局——
-          编辑器是全屏覆盖层，用户预期始终是超级简历式左右双栏，
+          编辑器是全屏覆盖层，用户预期始终是左右双栏，
           仅窄于 768px（手机）才退化为上下堆叠。预览模式下隐藏左侧表单、预览占满。 */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2">
         {/* 左：表单（预览模式下隐藏） */}

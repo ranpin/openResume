@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon from '../Icon';
 
 /**
- * 顶栏下拉面板（超级简历式）：点击按钮展开设置面板，点外部 / Esc 关闭。
+ * 顶栏下拉面板：点击按钮展开设置面板，点外部 / Esc 关闭。
  * 全局设置（模板 / 配色 / 排版 / 导出）都收进这里，左侧面板只留内容编辑。
  */
 const ToolbarPopover: React.FC<{
