@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Icon from '../Icon';
 import IconBtn from './IconBtn';
 import ToolbarPopover from './ToolbarPopover';
@@ -19,6 +19,9 @@ const ModulePanel: React.FC<ModulePanelProps> = ({
   onRemoveCustom,
 }) => {
   const [secDrag, setSecDrag] = useState<number | null>(null);
+  // 拖拽源索引用 ref 同步追踪：state 在事件密集派发时（Safari/WebKit）尚未刷进闭包，
+  // dragenter 会读到旧值导致整段拖拽失效；ref 始终读到最新值。state 仅用于高亮样式。
+  const secDragRef = useRef<number | null>(null);
   // 任何模块编辑都先「物化」出完整有序配置，再改
   const editSections = (fn: (arr: ReturnType<typeof sectionConfigFromData>) => void) =>
     update((d) => {
@@ -61,12 +64,18 @@ const ModulePanel: React.FC<ModulePanelProps> = ({
             {resolved.map((sec, i) => (
               <div
                 key={sec.customId ? `custom:${sec.customId}` : sec.key}
-                onDragEnter={() => {
-                  if (secDrag === null || secDrag === i) return;
-                  moveSectionTo(secDrag, i);
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  const from = secDragRef.current;
+                  if (from === null || from === i) return;
+                  moveSectionTo(from, i);
+                  secDragRef.current = i;
                   setSecDrag(i);
                 }}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
                 className={`flex items-center gap-2 rounded-lg border p-2 transition-shadow ${
                   secDrag === i
                     ? 'border-sage-400 shadow-md opacity-60'
@@ -75,8 +84,17 @@ const ModulePanel: React.FC<ModulePanelProps> = ({
               >
                 <span
                   draggable
-                  onDragStart={() => setSecDrag(i)}
-                  onDragEnd={() => setSecDrag(null)}
+                  onDragStart={(e) => {
+                    // Safari / Firefox 必须在 dragstart 调用 setData，否则拖拽根本不启动
+                    e.dataTransfer.setData('text/plain', String(i));
+                    e.dataTransfer.effectAllowed = 'move';
+                    secDragRef.current = i;
+                    setSecDrag(i);
+                  }}
+                  onDragEnd={() => {
+                    secDragRef.current = null;
+                    setSecDrag(null);
+                  }}
                   title="拖拽排序"
                   className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1"
                 >

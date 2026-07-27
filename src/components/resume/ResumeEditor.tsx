@@ -186,9 +186,9 @@ const EntryCard: React.FC<{
   onDown: () => void;
   onDelete: () => void;
   dragging?: boolean;
-  onDragStart?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
-  onDragEnter?: () => void;
+  onDragEnter?: (e: React.DragEvent) => void;
   children: React.ReactNode;
 }> = ({
   label,
@@ -360,21 +360,36 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     await downloadResumeWord(data);
   };
 
-  // 拖拽排序：拖动过程中实时把被拖项移动到目标位置
+  // 拖拽排序：拖动过程中实时把被拖项移动到目标位置。
+  // 源索引用 ref 同步追踪——state 在事件密集派发时（Safari/WebKit）尚未刷进闭包，
+  // dragenter 会读到旧值使整段拖拽失效；state 仅用于高亮样式。
   const [drag, setDrag] = useState<{ key: ArrayKey; index: number } | null>(
     null,
   );
+  const dragRef = useRef<{ key: ArrayKey; index: number } | null>(null);
   const dragProps = (key: ArrayKey, i: number) => ({
     dragging: drag?.key === key && drag.index === i,
-    onDragStart: () => setDrag({ key, index: i }),
-    onDragEnd: () => setDrag(null),
-    onDragEnter: () => {
-      if (!drag || drag.key !== key || drag.index === i) return;
-      const from = drag.index;
+    onDragStart: (e: React.DragEvent) => {
+      // Safari / Firefox 必须在 dragstart 调用 setData，否则拖拽根本不启动
+      e.dataTransfer.setData('text/plain', `${key}:${i}`);
+      e.dataTransfer.effectAllowed = 'move';
+      dragRef.current = { key, index: i };
+      setDrag({ key, index: i });
+    },
+    onDragEnd: () => {
+      dragRef.current = null;
+      setDrag(null);
+    },
+    onDragEnter: (e: React.DragEvent) => {
+      e.preventDefault();
+      const cur = dragRef.current;
+      if (!cur || cur.key !== key || cur.index === i) return;
+      const from = cur.index;
       update((d) => {
         const arr = d[key] as unknown[] | undefined;
         if (arr) moveItem(arr, from, i);
       });
+      dragRef.current = { key, index: i };
       setDrag({ key, index: i });
     },
   });
