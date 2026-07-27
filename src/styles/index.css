@@ -196,3 +196,28 @@
 .tag-pop {
   animation: tag-pop 0.15s ease-out;
 }
+
+/* 预览点模块跳转左侧编辑：目标分区闪烁高亮 + 滚动定位 */
+section[id^='sec-'] {
+  scroll-margin-top: 0.75rem;
+}
+
+@keyframes sec-flash {
+  0% {
+    background-color: #e3e8e3; /* sage-100 */
+    box-shadow: 0 0 0 2px #7d947d; /* sage-400 */
+  }
+  70% {
+    background-color: rgba(227, 232, 227, 0.4);
+    box-shadow: 0 0 0 2px #a3b5a3; /* sage-300 */
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+.sec-flash {
+  animation: sec-flash 1.3s ease-out;
+  border-radius: 0.75rem;
+}

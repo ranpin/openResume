@@ -46,6 +46,7 @@ import type {
   ResumeTemplate,
   ResumeTheme,
   ResumeFieldSeparator,
+  ResumeHeaderAlign,
 } from '../../types/resume';
 
 // 可拖拽排序的数组字段
@@ -90,6 +91,13 @@ const FIELD_SEPARATOR_OPTIONS: { id: ResumeFieldSeparator; label: string }[] = [
   { id: 'dot', label: '·' },
   { id: 'slash', label: '/' },
   { id: 'bar', label: '|' },
+];
+
+// 个人信息（头部）板块对齐选项
+const HEADER_ALIGN_OPTIONS: { id: ResumeHeaderAlign; label: string; icon: string }[] = [
+  { id: 'left', label: '左对齐', icon: 'align-left' },
+  { id: 'center', label: '居中', icon: 'align-center' },
+  { id: 'right', label: '右对齐', icon: 'align-right' },
 ];
 
 // 「智能一页」压缩下限（与对应滑块的最小值一致）
@@ -281,7 +289,8 @@ const SectionHeader: React.FC<{
   title: string;
   onAdd?: () => void;
   onExample?: () => void;
-}> = ({ icon, title, onAdd, onExample }) => (
+  onClear?: () => void; // 一键清空该模块全部内容
+}> = ({ icon, title, onAdd, onExample, onClear }) => (
   <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
     <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
       <Icon name={icon} className="text-sage-600" />
@@ -307,6 +316,17 @@ const SectionHeader: React.FC<{
         >
           <Icon name="plus" />
           添加
+        </button>
+      )}
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          title="删除该模块下的全部内容"
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-red-600"
+        >
+          <Icon name="trash" />
+          清空
         </button>
       )}
     </div>
@@ -522,6 +542,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         fieldSeparator: v,
       };
     });
+  const setHeaderAlign = (v: ResumeHeaderAlign) =>
+    update((d) => {
+      d.settings = {
+        ...SETTING_DEFAULTS,
+        ...(d.settings || {}),
+        headerAlign: v,
+      };
+    });
 
   // --- 智能一页：按屏幕分页页数，逐步压缩排版设置直到一页或到达下限 ---
   const [pageCount, setPageCount] = useState(1);
@@ -615,6 +643,20 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     }
   };
   const removePhoto = () => update((d) => (d.basics.photo = undefined));
+  // 预览头部点击上传：触发隐藏的 file input（上传逻辑仍走 handlePhotoFile）
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const triggerPhotoUpload = () => photoInputRef.current?.click();
+
+  // --- 预览模块点击 → 跳转左侧对应编辑分区（sec-<key>）并闪烁提示 ---
+  const handlePreviewSectionClick = (key: string) => {
+    const el = document.getElementById(`sec-${key}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.remove('sec-flash');
+    void el.offsetWidth; // 强制 reflow，重复点同一模块也能重新闪烁
+    el.classList.add('sec-flash');
+    window.setTimeout(() => el.classList.remove('sec-flash'), 1300);
+  };
 
   // --- 模块管理（顺序 / 改名 / 显隐）---
   const resolved: ResolvedSection[] = resolveSections(data.sections, data.custom);
@@ -919,6 +961,34 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                       控制学校/学院/专业/学位等字段在标题行的排布。
                     </p>
                   </div>
+                  <div>
+                    <span className="block text-xs font-medium text-gray-500 mb-1">
+                      个人信息对齐
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {HEADER_ALIGN_OPTIONS.map((o) => {
+                        const active = data.settings?.headerAlign === o.id;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setHeaderAlign(o.id)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border transition-colors ${
+                              active
+                                ? 'bg-sage-600 text-white border-sage-600'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Icon name={o.icon} />
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      姓名 / 头衔 / 联系方式在头部的对齐；默认随证件照（有照片左对齐、无照片居中）。
+                    </p>
+                  </div>
                 </div>
               )}
             </ToolbarPopover>
@@ -1199,53 +1269,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           {/* 基本信息 */}
           <section id="sec-basics">
             <SectionHeader icon="user" title="基本信息" />
-            {/* 证件照 */}
-            <div className="mb-4 flex items-center gap-4">
-              <div className="w-[76px] h-[102px] shrink-0 rounded-md border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-                {data.basics.photo ? (
-                  <img
-                    src={data.basics.photo}
-                    alt="证件照预览"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Icon name="user" className="text-2xl text-gray-300" />
-                )}
-              </div>
-              <div className="space-y-2">
-                <span className="block text-xs font-medium text-gray-500">
-                  证件照（可选）
-                </span>
-                <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white bg-sage-600 hover:bg-sage-700 cursor-pointer">
-                    <Icon name={photoBusy ? 'spinner' : 'image'} spin={photoBusy} />
-                    <span>{data.basics.photo ? '更换' : '上传'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        handlePhotoFile(e.target.files?.[0]);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                  {data.basics.photo && (
-                    <button
-                      type="button"
-                      onClick={removePhoto}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 border border-gray-200 hover:text-red-600 hover:bg-red-50"
-                    >
-                      <Icon name="trash" />
-                      移除
-                    </button>
-                  )}
-                </div>
-                <p className="text-[11px] text-gray-400 max-w-[220px]">
-                  自动压缩为小图内嵌，随简历一起保存/发布。
-                </p>
-              </div>
-            </div>
+            <p className="-mt-1 mb-3 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
+              <Icon name="image" />
+              证件照在右侧预览头部直接点击上传 / 更换 / 移除。
+            </p>
             <div className="grid sm:grid-cols-2 gap-3">
               <Field
                 label="姓名"
@@ -1286,6 +1313,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 label="政治面貌"
                 value={data.basics.political}
                 onChange={(v) => update((d) => (d.basics.political = v))}
+              />
+              <Field
+                label="籍贯"
+                value={data.basics.hometown}
+                onChange={(v) => update((d) => (d.basics.hometown = v))}
               />
               <Field
                 label="GitHub"
@@ -2033,6 +2065,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 });
                 setInterestsOpen(true);
               }}
+              onClear={
+                (data.interests || []).length > 0
+                  ? () => {
+                      update((d) => (d.interests = []));
+                      setInterestsOpen(false);
+                    }
+                  : undefined
+              }
             />
             {((data.interests || []).length > 0 || interestsOpen) && (
               <TagField
@@ -2108,14 +2148,33 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         )}
 
         {/* 右：实时预览（真·多页）；预览模式下占满整行。
-            PreviewFit：可用宽度不足一页 A4 时等比缩小，避免预览被裁切/覆盖。 */}
+            PreviewFit：可用宽度不足一页 A4 时等比缩小，避免预览被裁切/覆盖。
+            预览交互：点头部证件照上传/更换/移除；点任意模块跳转左侧对应编辑分区。 */}
         <PreviewFit
           className={`overflow-auto bg-gray-100 p-4 sm:p-8 ${
             previewMode ? 'md:col-span-2' : ''
           }`}
         >
-          <ResumeDocument data={data} onPages={handlePages} />
+          <ResumeDocument
+            data={data}
+            onPages={handlePages}
+            onSectionClick={previewMode ? undefined : handlePreviewSectionClick}
+            onPhotoUpload={triggerPhotoUpload}
+            onPhotoRemove={removePhoto}
+            photoBusy={photoBusy}
+          />
         </PreviewFit>
+        {/* 隐藏 file input：由预览头部证件照点击触发 */}
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            handlePhotoFile(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
       </div>
 
       {/* 保存反馈 toast */}

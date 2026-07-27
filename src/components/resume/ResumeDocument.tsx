@@ -17,6 +17,7 @@ import type {
   ResumeActivity,
   ResumeSettings,
   ResumeFieldSeparator,
+  ResumeHeaderAlign,
 } from '../../types/resume';
 
 /**
@@ -33,6 +34,11 @@ interface ResumeDocumentProps {
   id?: string;
   className?: string;
   onPages?: (count: number) => void; // 屏幕分页页数变化回调（智能一页用；sidebar 恒为 1 页不触发）
+  // 以下三项仅编辑器传入（查看器不传 → 纯展示）：
+  onSectionClick?: (key: string) => void; // 点击预览模块 → 跳转左侧对应编辑分区
+  onPhotoUpload?: () => void; // 点击预览证件照 → 触发上传/更换
+  onPhotoRemove?: () => void; // 移除证件照
+  photoBusy?: boolean; // 证件照处理中（上传压缩）
 }
 
 const clean = (arr?: string[]) => (arr || []).filter((s) => s && s.trim());
@@ -89,7 +95,7 @@ const SectionTitle: React.FC<{
 const ContactList: React.FC<{
   basics: ResumeBasics;
   onDark?: boolean;
-  align?: 'center' | 'left';
+  align?: 'center' | 'left' | 'right';
 }> = ({ basics, onDark, align = 'center' }) => {
   const items: { icon: string; text: string; href?: string }[] = [];
   if (basics.email)
@@ -102,6 +108,7 @@ const ContactList: React.FC<{
   if (basics.wechat) items.push({ icon: 'comments', text: basics.wechat });
   if (basics.location)
     items.push({ icon: 'map-marker-alt', text: basics.location });
+  if (basics.hometown) items.push({ icon: 'home', text: basics.hometown });
   if (basics.birth) items.push({ icon: 'calendar-alt', text: basics.birth });
   if (basics.political) items.push({ icon: 'flag', text: basics.political });
   if (basics.github)
@@ -123,7 +130,11 @@ const ContactList: React.FC<{
         onDark
           ? 'rs-meta flex flex-col gap-1.5 text-white/90'
           : `rs-body flex flex-wrap items-center gap-x-5 gap-y-1 ${
-              align === 'left' ? 'justify-start' : 'justify-center'
+              align === 'left'
+                ? 'justify-start'
+                : align === 'right'
+                  ? 'justify-end'
+                  : 'justify-center'
             }`
       }
     >
@@ -173,6 +184,72 @@ const PhotoBox: React.FC<{ src?: string; onDark?: boolean }> = ({
       }`}
     />
   ) : null;
+
+// 证件照（可编辑）：仅编辑器传入 onUpload 时启用交互——
+// 有照片：悬停显示「点击更换」遮罩 + 角标删除；无照片：虚线占位框点击上传。
+// 交互元素一律 print:hidden，导出 PDF（window.print）只输出静态照片。
+const PhotoZone: React.FC<{
+  src?: string;
+  onDark?: boolean;
+  busy?: boolean;
+  onUpload?: () => void;
+  onRemove?: () => void;
+}> = ({ src, onDark, busy, onUpload, onRemove }) => {
+  if (!onUpload) return <PhotoBox src={src} onDark={onDark} />;
+  if (src) {
+    return (
+      <div className="group/photo relative shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpload();
+          }}
+          title="点击更换证件照"
+          className="block w-[76px] h-[102px] overflow-hidden rounded-sm border border-gray-200 cursor-pointer"
+        >
+          <img
+            src={src}
+            alt="证件照"
+            className="resume-color-exact h-full w-full object-cover"
+          />
+          <span className="print:hidden absolute inset-0 hidden items-center justify-center bg-black/45 text-[11px] text-white group-hover/photo:flex">
+            点击更换
+          </span>
+        </button>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            title="移除证件照"
+            className="print:hidden absolute -right-2 -top-2 hidden h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm hover:text-red-600 group-hover/photo:flex"
+          >
+            <Icon name="times" className="text-xs" />
+          </button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onUpload();
+      }}
+      title="点击上传证件照"
+      className="print:hidden flex h-[102px] w-[76px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 hover:border-sage-400 hover:bg-sage-50 hover:text-sage-600"
+    >
+      <Icon name={busy ? 'spinner' : 'image'} spin={busy} className="text-lg" />
+      <span className="px-1 text-center text-[10px] leading-tight">
+        上传证件照
+      </span>
+    </button>
+  );
+};
 
 // 要点：整块作为 Markdown 富文本渲染；未显式标记的普通行默认补成箭头列表项
 const Highlights: React.FC<{ items?: string[] }> = ({ items }) => {
@@ -550,18 +627,55 @@ const CustomBlock: React.FC<{
   </section>
 );
 
+// 预览模块点击包裹：仅编辑器传入 onSectionClick 时启用——悬停淡 sage 描边，点击跳转左侧编辑。
+// 用 outline（不占布局）保证 Paginator 测高与打印分页不受影响；查看器不传则原样渲染。
+const ClickableSection: React.FC<{
+  sectionKey?: string;
+  onSectionClick?: (key: string) => void;
+  children: React.ReactNode;
+}> = ({ sectionKey, onSectionClick, children }) => {
+  if (!onSectionClick || !sectionKey) return <>{children}</>;
+  return (
+    <div
+      data-section={sectionKey}
+      onClick={() => onSectionClick(sectionKey)}
+      title="点击编辑此模块"
+      className="cursor-pointer rounded outline-offset-4 transition-shadow hover:outline hover:outline-2 hover:outline-sage-300"
+    >
+      {children}
+    </div>
+  );
+};
+
+const HEADER_ALIGN_CLASS: Record<ResumeHeaderAlign, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
 const SingleHeader: React.FC<{
   basics: ResumeBasics;
   theme: ThemeClasses;
-}> = ({ basics, theme }) => {
+  align?: ResumeHeaderAlign;
+  photoBusy?: boolean;
+  onPhotoUpload?: () => void;
+  onPhotoRemove?: () => void;
+}> = ({ basics, theme, align, photoBusy, onPhotoUpload, onPhotoRemove }) => {
   const hasPhoto = !!basics.photo;
+  const editable = !!onPhotoUpload;
+  // 缺省对齐随证件照：有照片左对齐、无照片居中；显式设置则覆盖
+  const effAlign: ResumeHeaderAlign = align ?? (hasPhoto ? 'left' : 'center');
+  // 编辑器始终留出证件照区（无照片时为可点上传的占位框），故按含照片的 flex 布局
+  const showPhotoCol = hasPhoto || editable;
   return (
     <header
       className={`resume-block border-b border-gray-200 pb-4 ${
-        hasPhoto ? 'flex items-center gap-5 text-left' : 'text-center'
+        showPhotoCol
+          ? `flex items-center gap-5 ${HEADER_ALIGN_CLASS[effAlign]}`
+          : HEADER_ALIGN_CLASS[effAlign]
       }`}
     >
-      <div className={hasPhoto ? 'flex-1 min-w-0' : ''}>
+      <div className={showPhotoCol ? 'flex-1 min-w-0' : ''}>
         <h1 className="rs-name font-bold text-gray-900">{basics.name}</h1>
         {basics.title && (
           <p className={`rs-title mt-1 font-medium ${theme.title}`}>
@@ -569,10 +683,17 @@ const SingleHeader: React.FC<{
           </p>
         )}
         <div className="mt-3">
-          <ContactList basics={basics} align={hasPhoto ? 'left' : 'center'} />
+          <ContactList basics={basics} align={effAlign} />
         </div>
       </div>
-      {hasPhoto && <PhotoBox src={basics.photo} />}
+      {showPhotoCol && (
+        <PhotoZone
+          src={basics.photo}
+          busy={photoBusy}
+          onUpload={onPhotoUpload}
+          onRemove={onPhotoRemove}
+        />
+      )}
     </header>
   );
 };
@@ -584,11 +705,29 @@ const buildBlocks = (
   theme: ThemeClasses,
   sections: ResolvedSection[],
   card = false,
+  opts: {
+    headerAlign?: ResumeHeaderAlign;
+    onSectionClick?: (key: string) => void;
+    onPhotoUpload?: () => void;
+    onPhotoRemove?: () => void;
+    photoBusy?: boolean;
+  } = {},
 ): Block[] => {
+  const { headerAlign, onSectionClick, onPhotoUpload, onPhotoRemove, photoBusy } =
+    opts;
   const blocks: Block[] = [];
   blocks.push({
     key: 'header',
-    node: <SingleHeader basics={data.basics} theme={theme} />,
+    node: (
+      <SingleHeader
+        basics={data.basics}
+        theme={theme}
+        align={headerAlign}
+        photoBusy={photoBusy}
+        onPhotoUpload={onPhotoUpload}
+        onPhotoRemove={onPhotoRemove}
+      />
+    ),
   });
 
   // 一个「多条目」分区：首块带标题，其余条目各成一块（便于跨页）
@@ -762,6 +901,28 @@ const buildBlocks = (
     }
   });
 
+  // 编辑器态：把每个内容块包成可点击区块，点击跳转左侧对应编辑分区。
+  // 块 key → 左侧分区 id（sec-<key>）：header/summary 都归基本信息，多条目块取前缀。
+  if (onSectionClick) {
+    const toSection = (key: string): string => {
+      if (key === 'header' || key === 'summary') return 'basics';
+      if (key.startsWith('edu')) return 'education';
+      if (key.startsWith('work')) return 'work';
+      if (key.startsWith('proj')) return 'projects';
+      if (key.startsWith('act')) return 'activities';
+      if (key.startsWith('custom')) return 'custom';
+      return key; // skills / awards / certificates / languages / interests 与分区 id 同名
+    };
+    return blocks.map((b) => ({
+      ...b,
+      node: (
+        <ClickableSection sectionKey={toSection(b.key)} onSectionClick={onSectionClick}>
+          {b.node}
+        </ClickableSection>
+      ),
+    }));
+  }
+
   return blocks;
 };
 
@@ -773,7 +934,11 @@ const SidebarLayout: React.FC<{
   data: ResumeData;
   theme: ThemeClasses;
   sections: ResolvedSection[];
-}> = ({ data, theme, sections }) => {
+  onSectionClick?: (key: string) => void;
+  onPhotoUpload?: () => void;
+  onPhotoRemove?: () => void;
+  photoBusy?: boolean;
+}> = ({ data, theme, sections, onSectionClick, onPhotoUpload, onPhotoRemove, photoBusy }) => {
   const { basics } = data;
   const visible = sections.filter((s) => !s.hidden);
 
@@ -868,15 +1033,49 @@ const SidebarLayout: React.FC<{
     }
   };
 
+  // 侧栏紧凑列表型模块（技能/荣誉/证书/语言/兴趣），onDark 配色
+  const renderAside = (sec: ResolvedSection): React.ReactNode => {
+    switch (sec.key) {
+      case 'skills':
+        return data.skills && data.skills.trim() ? (
+          <SkillsBlock skills={data.skills} theme={theme} title={sec.title} onDark />
+        ) : null;
+      case 'awards':
+        return data.awards && data.awards.length > 0 ? (
+          <AwardsBlock items={data.awards} theme={theme} title={sec.title} onDark />
+        ) : null;
+      case 'certificates':
+        return data.certificates && data.certificates.length > 0 ? (
+          <CertificatesBlock items={data.certificates} theme={theme} title={sec.title} onDark />
+        ) : null;
+      case 'languages':
+        return data.languages && data.languages.length > 0 ? (
+          <LanguagesBlock items={data.languages} theme={theme} title={sec.title} onDark />
+        ) : null;
+      case 'interests':
+        return clean(data.interests).length > 0 ? (
+          <InterestsBlock items={data.interests || []} theme={theme} title={sec.title} onDark />
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="grid grid-cols-[34%_1fr]">
       <aside
         className={`${theme.sidebarBg} resume-color-exact text-white px-6 py-8`}
       >
         <div className="resume-block mb-6">
-          {basics.photo && (
+          {(basics.photo || onPhotoUpload) && (
             <div className="mb-3">
-              <PhotoBox src={basics.photo} onDark />
+              <PhotoZone
+                src={basics.photo}
+                onDark
+                busy={photoBusy}
+                onUpload={onPhotoUpload}
+                onRemove={onPhotoRemove}
+              />
             </div>
           )}
           <h1 className="rs-name-sm font-bold leading-tight">{basics.name}</h1>
@@ -891,70 +1090,35 @@ const SidebarLayout: React.FC<{
           <ContactList basics={basics} onDark />
         </div>
         {asideKeys.map((sec) => {
-          switch (sec.key) {
-            case 'skills':
-              return data.skills && data.skills.trim() ? (
-                <div key="skills" className="mb-6">
-                  <SkillsBlock
-                    skills={data.skills}
-                    theme={theme}
-                    title={sec.title}
-                    onDark
-                  />
-                </div>
-              ) : null;
-            case 'awards':
-              return data.awards && data.awards.length > 0 ? (
-                <div key="awards" className="mb-6">
-                  <AwardsBlock
-                    items={data.awards}
-                    theme={theme}
-                    title={sec.title}
-                    onDark
-                  />
-                </div>
-              ) : null;
-            case 'certificates':
-              return data.certificates && data.certificates.length > 0 ? (
-                <div key="certificates" className="mb-6">
-                  <CertificatesBlock
-                    items={data.certificates}
-                    theme={theme}
-                    title={sec.title}
-                    onDark
-                  />
-                </div>
-              ) : null;
-            case 'languages':
-              return data.languages && data.languages.length > 0 ? (
-                <div key="languages" className="mb-6">
-                  <LanguagesBlock
-                    items={data.languages}
-                    theme={theme}
-                    title={sec.title}
-                    onDark
-                  />
-                </div>
-              ) : null;
-            case 'interests':
-              return clean(data.interests).length > 0 ? (
-                <div key="interests" className="mb-6">
-                  <InterestsBlock
-                    items={data.interests || []}
-                    theme={theme}
-                    title={sec.title}
-                    onDark
-                  />
-                </div>
-              ) : null;
-            default:
-              return null;
-          }
+          const node = renderAside(sec);
+          if (!node) return null;
+          return (
+            <ClickableSection
+              key={sec.key}
+              sectionKey={sec.key}
+              onSectionClick={onSectionClick}
+            >
+              <div className="mb-6">{node}</div>
+            </ClickableSection>
+          );
         })}
       </aside>
 
       <div className="px-8 py-8 space-y-6">
-        {mainKeys.map((sec) => renderMain(sec))}
+        {mainKeys.map((sec) => {
+          const node = renderMain(sec);
+          if (!node) return null;
+          const sk = sec.key === 'summary' ? 'basics' : sec.key;
+          return (
+            <ClickableSection
+              key={sec.key}
+              sectionKey={sk}
+              onSectionClick={onSectionClick}
+            >
+              {node}
+            </ClickableSection>
+          );
+        })}
       </div>
     </div>
   );
@@ -965,6 +1129,10 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
   id,
   className = '',
   onPages,
+  onSectionClick,
+  onPhotoUpload,
+  onPhotoRemove,
+  photoBusy,
 }) => {
   const theme = THEMES[data.theme || 'blue'];
   const template = data.template || 'classic';
@@ -973,6 +1141,7 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
   const pageMargin = data.settings?.pageMargin ?? 45;
   const dense = template === 'compact';
   const isCard = template === 'card';
+  const headerAlign = data.settings?.headerAlign;
 
   // 条目标题排版（单/双行 + 字段排列），经 Context 下发给各条目（单栏/卡片/双栏一致生效）
   const entryLayout: EntryLayout = {
@@ -988,13 +1157,27 @@ const ResumeDocument: React.FC<ResumeDocumentProps> = ({
           style={style}
           className={`resume-root resume-page bg-white text-gray-800 mx-auto w-full max-w-[820px] ${className}`}
         >
-          <SidebarLayout data={data} theme={theme} sections={sections} />
+          <SidebarLayout
+            data={data}
+            theme={theme}
+            sections={sections}
+            onSectionClick={onSectionClick}
+            onPhotoUpload={onPhotoUpload}
+            onPhotoRemove={onPhotoRemove}
+            photoBusy={photoBusy}
+          />
         </div>
       </EntryLayoutContext.Provider>
     );
   }
 
-  const blocks = buildBlocks(data, theme, sections, isCard);
+  const blocks = buildBlocks(data, theme, sections, isCard, {
+    headerAlign,
+    onSectionClick,
+    onPhotoUpload,
+    onPhotoRemove,
+    photoBusy,
+  });
   const signature = JSON.stringify(data);
 
   return (
