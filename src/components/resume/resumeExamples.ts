@@ -35,6 +35,18 @@ export const EXAMPLE_WORK: ResumeWork = {
   ],
 };
 
+export const EXAMPLE_INTERNSHIP: ResumeWork = {
+  company: '腾讯',
+  position: '后端研发实习生',
+  period: '2024.06 - 2024.09',
+  location: '深圳',
+  highlights: [
+    '参与订单系统重构，独立负责缓存模块，接口 P99 延迟下降 **40%**。',
+    '补齐核心链路单元测试 200+，模块覆盖率从 45% 提升至 **80%**。',
+    '协助排查线上故障 3 次并沉淀排查文档，团队 MTTR 缩短 **30%**。',
+  ],
+};
+
 export const EXAMPLE_PROJECT: ResumeProject = {
   name: '智能简历解析引擎',
   role: '核心开发',

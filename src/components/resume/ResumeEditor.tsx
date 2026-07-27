@@ -29,6 +29,7 @@ import {
   EXAMPLE_CERTIFICATE,
   EXAMPLE_EDUCATION,
   EXAMPLE_INTERESTS,
+  EXAMPLE_INTERNSHIP,
   EXAMPLE_LANGUAGE,
   EXAMPLE_PROJECT,
   EXAMPLE_SKILL,
@@ -53,6 +54,7 @@ import type {
 type ArrayKey =
   | 'education'
   | 'work'
+  | 'internship'
   | 'projects'
   | 'awards'
   | 'certificates'
@@ -257,6 +259,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const [translateOpen, setTranslateOpen] = useState(false);
   // 预览模式：隐藏左侧表单、预览占满（全屏预览）
   const [previewMode, setPreviewMode] = useState(false);
+  // 顶栏简历名内联编辑：null = 展示态，字符串 = 编辑中文本（Enter/失焦提交，Esc 取消）
+  const [labelEdit, setLabelEdit] = useState<string | null>(null);
   // 兴趣爱好编辑框：默认收起，点「添加」才展开（与其他条目式模块一致）
   const [interestsOpen, setInterestsOpen] = useState(false);
 
@@ -522,15 +526,70 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const deleteSubProject = (wi: number, pi: number) =>
     update((d) => d.work?.[wi].projects?.splice(pi, 1));
 
+  // --- 实习经历下的子项目（与工作经历一致）---
+  const addSubProjectIntern = (wi: number) =>
+    update((d) => {
+      if (!d.internship) return;
+      (d.internship[wi].projects ||= []).push({ name: '' });
+    });
+  const updateSubProjectIntern = (
+    wi: number,
+    pi: number,
+    fn: (p: ResumeProject) => void,
+  ) =>
+    update((d) => {
+      const p = d.internship?.[wi].projects?.[pi];
+      if (p) fn(p);
+    });
+  const moveSubProjectIntern = (wi: number, pi: number, dir: number) =>
+    update((d) => {
+      const arr = d.internship?.[wi].projects;
+      if (arr) moveInArray(arr, pi, dir);
+    });
+  const deleteSubProjectIntern = (wi: number, pi: number) =>
+    update((d) => d.internship?.[wi].projects?.splice(pi, 1));
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex flex-col">
       {/* 顶栏：左侧标题；右侧全局设置（模板/配色/排版/智能一页）+ 撤销重做 + 预览 + 操作 */}
       <div className="bg-white border-b px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-2 min-w-0">
           <Icon name="edit" className="text-sage-600" />
-          <span className="font-semibold text-gray-900 truncate">
-            编辑简历 · {data.label}
+          <span className="font-semibold text-gray-900 shrink-0">
+            编辑简历 ·
           </span>
+          {labelEdit === null ? (
+            <button
+              type="button"
+              onClick={() => setLabelEdit(data.label)}
+              title="点击修改简历名称"
+              className="group inline-flex items-center gap-1 min-w-0 -ml-0.5 rounded-md px-1.5 py-0.5 font-semibold text-gray-900 transition-colors hover:bg-sage-50 hover:text-sage-700"
+            >
+              <span className="truncate">{data.label}</span>
+              <Icon
+                name="edit"
+                className="shrink-0 text-gray-300 transition-colors group-hover:text-sage-500"
+              />
+            </button>
+          ) : (
+            <input
+              autoFocus
+              value={labelEdit}
+              onChange={(e) => setLabelEdit(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                else if (e.key === 'Escape') setLabelEdit(null);
+              }}
+              onBlur={() => {
+                const v = labelEdit.trim();
+                if (v && v !== data.label) update((d) => (d.label = v));
+                setLabelEdit(null);
+              }}
+              title="简历名称（Enter 保存，Esc 取消）"
+              className="w-36 sm:w-56 rounded-md border border-sage-400 px-1.5 py-0.5 font-semibold text-gray-900 outline-none ring-2 ring-sage-100 focus:ring-sage-200"
+            />
+          )}
           {dirty && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 shrink-0">
               未发布
@@ -732,23 +791,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
           {/* 简历诊断：完成度 + 智能检查 */}
           <DiagnosticsPanel data={data} onFix={(fix) => update(fix)} />
-
-          {/* 简历元信息 */}
-          <section>
-            <SectionHeader icon="file-alt" title="简历信息" />
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Field
-                label="简历名称（横排显示）"
-                value={data.label}
-                onChange={(v) => update((d) => (d.label = v))}
-              />
-              <Field
-                label="目标岗位"
-                value={data.target}
-                onChange={(v) => update((d) => (d.target = v))}
-              />
-            </div>
-          </section>
 
           {/* 基本信息 */}
           <section id="sec-basics">
@@ -1117,6 +1159,202 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                           onPolish={() =>
                             openPolish(sp.highlights, (ls) =>
                               updateSubProject(i, pi, (p) => (p.highlights = ls)),
+                            )
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </EntryCard>
+              ))}
+            </div>
+          </section>
+
+          {/* 实习经历 */}
+          <section id="sec-internship">
+            <SectionHeader
+              icon="briefcase"
+              title={titleOf('internship')}
+              onExample={() =>
+                update((d) => {
+                  d.internship ||= [];
+                  d.internship.push(EXAMPLE_INTERNSHIP);
+                })
+              }
+              onAdd={() =>
+                update((d) => {
+                  d.internship ||= [];
+                  d.internship.push({ company: '' });
+                })
+              }
+            />
+            <div className="space-y-3">
+              {(data.internship || []).map((w, i) => (
+                <EntryCard
+                  key={i}
+                  label="实习"
+                  index={i}
+                  total={(data.internship || []).length}
+                  {...dragProps('internship', i)}
+                  onUp={() =>
+                    update((d) => d.internship && moveInArray(d.internship, i, -1))
+                  }
+                  onDown={() =>
+                    update((d) => d.internship && moveInArray(d.internship, i, 1))
+                  }
+                  onDelete={() => update((d) => d.internship?.splice(i, 1))}
+                >
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field
+                      label="公司"
+                      value={w.company}
+                      onChange={(v) =>
+                        update((d) => d.internship && (d.internship[i].company = v))
+                      }
+                    />
+                    <Field
+                      label="职位"
+                      value={w.position}
+                      onChange={(v) =>
+                        update((d) => d.internship && (d.internship[i].position = v))
+                      }
+                    />
+                    <PeriodField
+                      label="时间"
+                      value={w.period}
+                      onChange={(v) =>
+                        update((d) => d.internship && (d.internship[i].period = v))
+                      }
+                    />
+                    <Field
+                      label="地点"
+                      value={w.location}
+                      onChange={(v) =>
+                        update((d) => d.internship && (d.internship[i].location = v))
+                      }
+                    />
+                  </div>
+                  <RichTextField
+                    label="实习要点"
+                    value={lines(w.highlights)}
+                    rows={5}
+                    onChange={(v) =>
+                      update(
+                        (d) =>
+                          d.internship && (d.internship[i].highlights = toLines(v)),
+                      )
+                    }
+                    onPolish={() =>
+                      openPolish(w.highlights, (ls) =>
+                        update(
+                          (d) => d.internship && (d.internship[i].highlights = ls),
+                        ),
+                      )
+                    }
+                  />
+
+                  {/* 子项目：同一公司下的多个项目 */}
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-white/70 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                        <Icon name="code" className="text-sage-500" />
+                        公司内项目（{(w.projects || []).length}）
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => addSubProjectIntern(i)}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-sage-600 hover:text-sage-700"
+                      >
+                        <Icon name="plus" />
+                        添加项目
+                      </button>
+                    </div>
+                    {(w.projects || []).map((sp, pi) => (
+                      <div
+                        key={pi}
+                        className="rounded-lg border border-gray-200 bg-gray-50/70 p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-gray-400">
+                            项目 #{pi + 1}
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            <IconBtn
+                              icon="arrow-up"
+                              onClick={() => moveSubProjectIntern(i, pi, -1)}
+                              disabled={pi === 0}
+                              title="上移"
+                            />
+                            <IconBtn
+                              icon="arrow-down"
+                              onClick={() => moveSubProjectIntern(i, pi, 1)}
+                              disabled={pi === (w.projects || []).length - 1}
+                              title="下移"
+                            />
+                            <IconBtn
+                              icon="trash"
+                              onClick={() => deleteSubProjectIntern(i, pi)}
+                              danger
+                              title="删除"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <Field
+                            label="项目名"
+                            value={sp.name}
+                            onChange={(v) =>
+                              updateSubProjectIntern(i, pi, (p) => (p.name = v))
+                            }
+                          />
+                          <Field
+                            label="角色"
+                            value={sp.role}
+                            onChange={(v) =>
+                              updateSubProjectIntern(i, pi, (p) => (p.role = v))
+                            }
+                          />
+                          <PeriodField
+                            label="时间"
+                            value={sp.period}
+                            onChange={(v) =>
+                              updateSubProjectIntern(i, pi, (p) => (p.period = v))
+                            }
+                          />
+                          <Field
+                            label="链接"
+                            value={sp.link}
+                            onChange={(v) =>
+                              updateSubProjectIntern(i, pi, (p) => (p.link = v))
+                            }
+                          />
+                        </div>
+                        <TagField
+                          label="技术栈"
+                          placeholder="如 C++, Python"
+                          items={sp.tech || []}
+                          onChange={(v) =>
+                            updateSubProjectIntern(i, pi, (p) => (p.tech = v))
+                          }
+                        />
+                        <RichTextField
+                          label="项目要点"
+                          value={lines(sp.highlights)}
+                          rows={4}
+                          onChange={(v) =>
+                            updateSubProjectIntern(
+                              i,
+                              pi,
+                              (p) => (p.highlights = toLines(v)),
+                            )
+                          }
+                          onPolish={() =>
+                            openPolish(sp.highlights, (ls) =>
+                              updateSubProjectIntern(
+                                i,
+                                pi,
+                                (p) => (p.highlights = ls),
+                              ),
                             )
                           }
                         />

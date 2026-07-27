@@ -18,6 +18,16 @@ describe('runChecks', () => {
     expect(ids).toContain('no-exp');
   });
 
+  it('does not flag no-exp when only internship is present', () => {
+    const d: ResumeData = {
+      ...base,
+      internship: [
+        { company: 'C', position: '实习生', highlights: ['做了 Y 项目，提升 20%'] },
+      ],
+    };
+    expect(runChecks(d).map((i) => i.id)).not.toContain('no-exp');
+  });
+
   it('flags invalid email format', () => {
     const r = runChecks({ ...base, basics: { name: 'a', email: 'not-an-email' } });
     expect(r.map((i) => i.id)).toContain('bad-email');

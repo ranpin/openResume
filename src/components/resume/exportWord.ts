@@ -373,6 +373,10 @@ const renderSection = (
       return data.work && data.work.length > 0
         ? [head(), ...data.work.flatMap((w) => workEntry(w, ctx))]
         : [];
+    case 'internship':
+      return data.internship && data.internship.length > 0
+        ? [head(), ...data.internship.flatMap((w) => workEntry(w, ctx))]
+        : [];
     case 'projects':
       return data.projects && data.projects.length > 0
         ? [head(), ...data.projects.flatMap((p) => projEntry(p, ctx))]

@@ -1,7 +1,7 @@
 // 简历完成度诊断：把一份简历拆成若干加权检查项，算出 0-100 的完成度，
 // 并给出未完成项的改进建议。供编辑器的「完成度」面板使用。
 
-import type { ResumeData } from '../../types/resume';
+import type { ResumeData, ResumeWork } from '../../types/resume';
 
 export interface CompletenessCheck {
   key: string;
@@ -27,6 +27,7 @@ export function computeCompleteness(d: ResumeData): CompletenessResult {
   const b = d.basics;
   const edu = d.education || [];
   const work = d.work || [];
+  const internship = d.internship || [];
   const projects = d.projects || [];
   const awards = d.awards || [];
   const certs = d.certificates || [];
@@ -34,17 +35,19 @@ export function computeCompleteness(d: ResumeData): CompletenessResult {
   const goodEdu = edu.some(
     (e) => has(e.school) && (has(e.degree) || has(e.major)) && has(e.period),
   );
-  const goodWork = work.some(
-    (w) => has(w.company) && has(w.position) && (w.highlights || []).some(solid),
-  );
+  // 一段「像样」的工作/实习经历：公司 + 职位 + 至少一条充实要点
+  const goodExp = (w: ResumeWork) =>
+    has(w.company) && has(w.position) && (w.highlights || []).some(solid);
+  const goodWork = work.some(goodExp) || internship.some(goodExp);
   const goodProject = projects.some(
     (p) => has(p.name) && (p.highlights || []).some(solid),
   );
   const hasSkillItems = solid(d.skills);
 
-  // 经历丰富度：工作/项目至少有一类写了 2 条以上要点
+  // 经历丰富度：工作/实习/项目至少有一类写了 2 条以上要点
   const richHighlights =
     work.some((w) => (w.highlights || []).filter(solid).length >= 2) ||
+    internship.some((w) => (w.highlights || []).filter(solid).length >= 2) ||
     projects.some((p) => (p.highlights || []).filter(solid).length >= 2);
 
   const checks: CompletenessCheck[] = [

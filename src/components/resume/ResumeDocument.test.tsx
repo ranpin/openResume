@@ -34,6 +34,26 @@ describe('ResumeDocument', () => {
     expect(screen.getAllByText(/做了 X/).length).toBeGreaterThan(0);
   });
 
+  it('renders internship section identically to work (实习经历)', () => {
+    render(
+      <ResumeDocument
+        data={{
+          ...base,
+          internship: [
+            { company: '腾讯', position: '实习生', highlights: ['参与重构，延迟下降 40%'] },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getAllByText('实习经历').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('腾讯').length).toBeGreaterThan(0);
+  });
+
+  it('does not render an empty internship section', () => {
+    render(<ResumeDocument data={base} />);
+    expect(screen.queryByText('实习经历')).toBeNull();
+  });
+
   it('aligns entry headers (default 双行): line1 title left + period right, line2 fields', () => {
     render(
       <ResumeDocument
