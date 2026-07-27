@@ -1,6 +1,6 @@
 // 数据源配置 —— 数据与代码仓库隔离：
-// 应用本体（代码仓库 ranpin/resume）不含任何个人数据；简历与经历库存放在独立的
-// 数据仓库，运行时从 raw.githubusercontent.com 拉取（见 resume-data 仓库 README）。
+// 应用本体（代码仓库 ranpin/openResume）不含任何个人数据；简历与经历库存放在独立的
+// 数据仓库，运行时从 raw.githubusercontent.com 拉取（见 openResume-data 仓库 README）。
 //
 // fork 使用者：改成自己的数据仓库（结构相同）；置 null 则进入纯本地模式——
 // 无远程数据，简历只存在于浏览器 IndexedDB，经「AI 生成 / 导入简历」创建，
@@ -14,7 +14,7 @@ export interface DataSourceConfig {
 
 export const DATA_SOURCE: DataSourceConfig | null = {
   owner: 'ranpin',
-  repo: 'resume-data',
+  repo: 'openResume-data',
   branch: 'main',
 };
 

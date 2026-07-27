@@ -47,13 +47,13 @@ Ranpin 的在线简历中心，独立部署在 **https://ranpin.github.io/openRe
 
 本仓库是**纯应用**，不含任何个人数据。数据分两处：
 
-- **数据仓库 [ranpin/resume-data](https://github.com/ranpin/resume-data)**（公开）：`resumes/`、`projects/`、`internships/`、`honors.yaml` 与清单 `index.json`。站点运行时从 raw.githubusercontent.com 拉取（`cache: no-store`，约 1 分钟刷新；网络不可用时回退本机离线缓存并提示）。改内容 = 改数据仓库的 YAML 并提交，或用网页编辑器「发布到线上」一键提交。
+- **数据仓库 [ranpin/openResume-data](https://github.com/ranpin/openResume-data)**（公开）：`resumes/`、`projects/`、`internships/`、`honors.yaml` 与清单 `index.json`。站点运行时从 raw.githubusercontent.com 拉取（`cache: no-store`，约 1 分钟刷新；网络不可用时回退本机离线缓存并提示）。改内容 = 改数据仓库的 YAML 并提交，或用网页编辑器「发布到线上」一键提交。
 - **本机浏览器 IndexedDB**（库 `ranpin-resume`）：编辑草稿、发布指纹、远程内容离线缓存。配额以 GB 计，刷新 / 关浏览器不丢；旧版 localStorage 草稿首次打开自动迁入。编辑器「导出 → 备份全部数据（JSON）」与简历页「导入备份」可跨设备迁移。
 
 ## Fork 自用
 
 1. fork 本仓库；
-2. 建一个自己的数据仓库（结构照抄 resume-data：`resumes/`、`projects/`、`internships/`、`honors.yaml` + 清单 `index.json`），把 `src/data/source.ts` 的 `DATA_SOURCE` 改成 `{ owner: '你的用户名', repo: '你的数据仓库', branch: 'main' }`；
+2. 建一个自己的数据仓库（结构照抄 openResume-data：`resumes/`、`projects/`、`internships/`、`honors.yaml` + 清单 `index.json`），把 `src/data/source.ts` 的 `DATA_SOURCE` 改成 `{ owner: '你的用户名', repo: '你的数据仓库', branch: 'main' }`；
 3. 「发布到线上」随即指向你的数据仓库（Token 需该仓库 Contents 读写）。
 
 不想建数据仓库？把 `DATA_SOURCE` 置 `null` 进入**纯本地模式**：无远程数据，简历经「AI 生成 / 导入简历」创建、只存本机 IndexedDB，发布入口自动隐藏。
