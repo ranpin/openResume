@@ -75,13 +75,22 @@ const LANGUAGE_LEVELS = [
   '托福 100+',
 ];
 
-// 全局排版设置的默认值与范围（滑块）
+// 全局排版设置的默认值与范围（字号为磅值选择，其余为滑块）
 const SETTING_DEFAULTS = {
   fontScale: 1,
   lineHeight: 1.6,
   blockGap: 16,
   pageMargin: 45,
 };
+
+// 全局字号：Word 式磅值选择。正文基准 13px（≈9.75pt），显示磅值 = 9.75 × fontScale，
+// 选择字号写回对应倍率（数据模型仍是 fontScale，兼容既有简历 YAML）。
+const BODY_BASE_PT = 9.75;
+const FONT_SIZE_OPTIONS = [8, 9, 10, 11, 12, 13, 14, 15, 16];
+const scaleToPt = (scale: number): number => Math.round(BODY_BASE_PT * scale);
+// 选项列表并入当前磅值（压缩排版后的非整档倍率也能正确回显）
+const fontSizeOptions = (current: number): number[] =>
+  [...new Set([...FONT_SIZE_OPTIONS, current])].sort((a, b) => a - b);
 
 // 条目标题排版选项（文本格式：单/双行 + 字段排列）
 const HEADER_LINES_OPTIONS: { id: 1 | 2; label: string }[] = [
@@ -114,7 +123,7 @@ const moveItem = (arr: unknown[], from: number, to: number): void => {
 
 /**
  * 超级简历式简历编辑器：左侧分区表单，右侧实时预览。
- * 所有改动写入 useResumeStore 的本地草稿（localStorage，刷新不丢）。
+ * 所有改动写入 useResumeStore 的本地草稿（IndexedDB，刷新不丢）。
  * 以 lazy + Suspense 加载，且只在客户端打开，SSG 预渲染不涉及。
  */
 
@@ -558,7 +567,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const pageCountRef = useRef(pageCount);
   pageCountRef.current = pageCount;
   const [autoFit, setAutoFit] = useState<{ steps: number } | null>(null);
-  const [fitMsg, setFitMsg] = useState<string | null>(null);
   // 开关状态：压缩完成后点亮，再次点击恢复压缩前的排版
   const [fitApplied, setFitApplied] = useState(false);
   const preFitSettingsRef = useRef<ResumeSettings | null>(null);
@@ -571,15 +579,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
       preFitSettingsRef.current = null;
       setFitApplied(false);
       if (snap) update((d) => (d.settings = snap));
-      setFitMsg('已恢复压缩前的排版');
-      return;
-    }
-    if (pageCountRef.current <= 1) {
-      setFitMsg('当前已是一页，无需压缩');
       return;
     }
     preFitSettingsRef.current = { ...SETTING_DEFAULTS, ...(data.settings || {}) };
-    setFitMsg(null);
+    if (pageCountRef.current <= 1) {
+      // 已经是一页：无需压缩，仅点亮开关（再次点击恢复原排版）
+      setFitApplied(true);
+      return;
+    }
     setAutoFit({ steps: 0 });
   };
 
@@ -595,13 +602,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     if (count <= 1) {
       setAutoFit(null);
       setFitApplied(true);
-      setFitMsg('已压缩到一页 ✓');
       return;
     }
     if (atMin || autoFit.steps >= 14) {
       setAutoFit(null);
       setFitApplied(true);
-      setFitMsg(`已尽量压缩，仍需 ${count} 页`);
       return;
     }
     // 压缩一步：各维度按比例下调（clamp 到下限），等分页测量稳定后再评估下一步
@@ -622,13 +627,6 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
     return () => clearTimeout(t);
     // 仅随 autoFit 推进；pageCount 经 ref、data 经 update 函数式更新读取，均为最新
   }, [autoFit]);
-
-  // 反馈消息数秒后自动消失
-  useEffect(() => {
-    if (!fitMsg) return;
-    const t = setTimeout(() => setFitMsg(null), 4000);
-    return () => clearTimeout(t);
-  }, [fitMsg]);
 
   // --- 证件照 ---
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -841,15 +839,30 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <Slider
-                      label="全局字号"
-                      value={settings.fontScale}
-                      min={0.8}
-                      max={1.25}
-                      step={0.05}
-                      display={(v) => `${Math.round(v * 100)}%`}
-                      onChange={(v) => setSetting('fontScale', v)}
-                    />
+                    <label className="block">
+                      <span className="flex items-center justify-between text-xs font-medium text-gray-500 mb-1">
+                        <span>全局字号</span>
+                        <span className="font-mono text-gray-700">
+                          {scaleToPt(settings.fontScale)} pt
+                        </span>
+                      </span>
+                      <select
+                        value={String(scaleToPt(settings.fontScale))}
+                        onChange={(e) =>
+                          setSetting(
+                            'fontScale',
+                            +(parseInt(e.target.value, 10) / BODY_BASE_PT).toFixed(4),
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none cursor-pointer hover:border-sage-400 focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
+                      >
+                        {fontSizeOptions(scaleToPt(settings.fontScale)).map((pt) => (
+                          <option key={pt} value={String(pt)}>
+                            {pt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <Slider
                       label="行间距"
                       value={settings.lineHeight}
@@ -1096,24 +1109,21 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
               onClick={toggleSmartFit}
               disabled={!!autoFit}
               title={fitApplied ? '恢复压缩前的排版' : '自动压缩排版直到塞进一页'}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                fitApplied
-                  ? 'bg-sage-600 border-sage-600 text-white hover:bg-sage-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border transition-all active:scale-95 disabled:cursor-not-allowed ${
+                autoFit
+                  ? 'border-sage-300 bg-sage-100 text-sage-700'
+                  : fitApplied
+                    ? 'bg-sage-600 border-sage-600 text-white shadow-sm hover:bg-sage-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-sage-300'
               }`}
             >
-              <Icon name="magic" />
+              <Icon name={autoFit ? 'spinner' : 'magic'} spin={!!autoFit} />
               <span className="hidden lg:inline">
                 {autoFit ? '压缩中…' : '智能一页'}
               </span>
             </button>
             <span className="text-xs text-gray-500 whitespace-nowrap">
               共 {pageCount} 页
-              {fitMsg && (
-                <span className="ml-1 font-medium text-emerald-600">
-                  {fitMsg}
-                </span>
-              )}
             </span>
           </div>
 

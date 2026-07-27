@@ -92,7 +92,7 @@ export type ResumeHeaderAlign = 'left' | 'center' | 'right';
 // 全局排版设置：作用于整份简历（字号、行距、块间距、页边距）。
 // 通过 CSS 变量下发到简历根节点，缺省时用文档默认值。
 export interface ResumeSettings {
-  fontScale?: number; // 全局字号倍率，1 = 默认，范围约 0.85–1.2
+  fontScale?: number; // 全局字号倍率，1 = 默认（正文 13px ≈ 10pt）；UI 按 Word 式磅值选择
   lineHeight?: number; // 正文行距，默认 1.6，范围约 1.2–2
   blockGap?: number; // 各条目/分区之间的间距(px)，默认 16
   pageMargin?: number; // A4 页边距(px)，默认 45
