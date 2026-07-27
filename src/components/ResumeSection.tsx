@@ -137,13 +137,13 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
 
   return (
     <div>
-      {/* 顶部：一级切换（我的简历 / 详细经历）与创建级入口（AI 生成 / 导入简历）同行 */}
+      {/* 顶部：一级切换（我的简历 / 作品集）与创建级入口（AI 生成 / 导入简历）同行 */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-xl bg-gray-100 p-1">
           {(
             [
               { key: 'resume', label: '我的简历', icon: 'file-alt' },
-              { key: 'catalog', label: '详细经历', icon: 'folder-open' },
+              { key: 'catalog', label: '作品集', icon: 'folder-open' },
             ] as const
           ).map((t) => (
             <button
