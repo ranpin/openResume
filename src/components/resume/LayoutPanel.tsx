@@ -7,6 +7,7 @@ import {
   FIELD_SEPARATOR_OPTIONS,
   HEADER_ALIGN_OPTIONS,
   HEADER_LINES_OPTIONS,
+  LAYOUT_PRESETS,
   SETTING_DEFAULTS,
   fontSizeOptions,
   scaleToPt,
@@ -84,6 +85,15 @@ const LayoutPanel: React.FC<LayoutPanelProps> = ({ data, update }) => {
         headerAlign: v,
       };
     });
+  // 预设一键联动四项数值设置（单次 update → 单条撤销记录）
+  const applyPreset = (p: (typeof LAYOUT_PRESETS)[number]) =>
+    update((d) => {
+      d.settings = { ...SETTING_DEFAULTS, ...(d.settings || {}), ...p.settings };
+    });
+  const isPresetActive = (p: (typeof LAYOUT_PRESETS)[number]) =>
+    (Object.keys(p.settings) as (keyof typeof SETTING_DEFAULTS)[]).every(
+      (k) => Math.abs(settings[k] - p.settings[k]) < 5e-4,
+    );
 
   return (
     <ToolbarPopover
@@ -106,6 +116,31 @@ const LayoutPanel: React.FC<LayoutPanelProps> = ({ data, update }) => {
               <Icon name="redo" />
               恢复默认
             </button>
+          </div>
+          <div>
+            <span className="block text-xs font-medium text-gray-500 mb-1">
+              密度预设
+            </span>
+            <div className="flex gap-2">
+              {LAYOUT_PRESETS.map((p) => {
+                const active = isPresetActive(p);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    title={`一键切换为「${p.label}」排版（字号/行距/间距/页边距）`}
+                    onClick={() => applyPreset(p)}
+                    className={`flex-1 px-2.5 py-1 rounded-lg text-xs border transition-colors ${
+                      active
+                        ? 'bg-sage-600 text-white border-sage-600'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <label className="block">
