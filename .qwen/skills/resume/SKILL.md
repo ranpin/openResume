@@ -31,7 +31,7 @@ npx vitest run             # 16 个测试文件，渲染测试用 @testing-libra
 - **草稿持久化 `useResumeStore`**：zustand persist + `idbStateStorage`（`src/store/idb.ts`：IndexedDB 库 `ranpin-resume` / store `kv`，单项操作失败降级 localStorage）。`skipHydration`：`ResumeSection` 挂载后先 `migrateLegacyKeys([DRAFTS_STORAGE_KEY])`（旧 localStorage 键一次性迁入）再 `rehydrate()` → `setHydrated(true)`。全量迁移工具 `store/backup.ts`：编辑器导出 popover「备份全部数据（JSON）」下载、查看器「导入备份」合并恢复（按 id 覆盖，不清空）。
 - **发布 `components/resume/github.ts`**：浏览器直连数据仓库 GitHub Contents API（BYO Token，存 localStorage `ranpin-github-token`）。`publishResume` = PUT `resumes/<id>.yaml`（更新已有文件带 sha）；新建文件后再二次提交把路径登记进 `index.json`。`publishEnabled = DATA_SOURCE !== null` 控制 UI 显隐。数据仓库提交约 1 分钟后（raw 刷新）线上可见，**不经 Actions 构建**。
 
-## 编辑器界面结构（超级简历式）
+## 编辑器界面结构
 
 全局设置**只在顶部工具栏**，左侧面板只放内容模块（勿把全局设置移回左侧）：
 

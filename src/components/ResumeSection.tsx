@@ -290,7 +290,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
         </div>
       )}
 
-      {/* 编辑器（超级简历式双栏）*/}
+      {/* 编辑器（左右双栏）*/}
       {editing && current && selectedId && (
         <Suspense fallback={null}>
           <ResumeEditor
