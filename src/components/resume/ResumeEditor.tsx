@@ -557,6 +557,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <span className="text-xs text-gray-500 whitespace-nowrap">
               共 {pageCount} 页
             </span>
+            {fitApplied && !autoFit && (
+              <button
+                type="button"
+                onClick={toggleSmartFit}
+                title="恢复压缩前的排版"
+                className="p-1 -ml-0.5 rounded-md text-xs text-gray-400 hover:text-sage-600 hover:bg-sage-50 transition-colors"
+              >
+                <Icon name="undo" />
+              </button>
+            )}
           </div>
 
           {/* 撤销 / 重做 */}
