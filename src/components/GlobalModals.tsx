@@ -2,6 +2,7 @@ import React from 'react';
 import ModuleRenderer from './ModuleRenderer';
 import SmartRecommendations from './SmartRecommendations';
 import Icon from './Icon';
+import ProjectCover from './ProjectCover';
 import type { Project, Publication, Internship, ContentItem } from '../types';
 
 interface GlobalModalsProps {
@@ -28,19 +29,28 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       {/* 项目详情弹窗 */}
       {selectedArticle && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between z-10 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-gray-900 text-center flex-1">
-                {selectedArticle.title}
-              </h2>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+            {/* 封面 banner（与卡片同源，常驻不随内容滚动） */}
+            <div className="relative shrink-0">
+              <ProjectCover
+                project={selectedArticle}
+                showStatus={false}
+                className="h-36 w-full sm:h-44"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent px-6 pb-4 pt-12 sm:px-8">
+                <h2 className="font-serif text-xl font-bold text-white drop-shadow-sm sm:text-2xl">
+                  {selectedArticle.title}
+                </h2>
+              </div>
               <button
                 onClick={onCloseArticle}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors ml-4 flex-shrink-0"
+                aria-label="关闭"
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm transition-colors hover:bg-black/50"
               >
-                <Icon name="times" className="text-gray-600" />
+                <Icon name="times" className="text-white" />
               </button>
             </div>
-            <div className="p-8 overflow-y-auto max-h-[calc(95vh-80px)]">
+            <div className="overflow-y-auto p-8">
               <ModuleRenderer
                 type="project"
                 data={selectedArticle}

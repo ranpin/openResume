@@ -54,6 +54,10 @@ export interface Project {
   architectureImage?: string;
   githubUrl?: string;
   liveUrl?: string;
+  /** 精选项目，置顶以大号 hero 卡呈现 */
+  featured?: boolean;
+  /** 真实封面图 URL；缺省时使用按 id 生成的程序化封面 */
+  cover?: string;
 }
 
 export interface Publication {

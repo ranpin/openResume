@@ -183,6 +183,7 @@ interface IconProps {
   /** 图标名（原 fa- 之后的部分，如 "home"、"chevron-right"） */
   name: string;
   className?: string;
+  style?: React.CSSProperties;
   /** 旋转动画（原 fa-spin） */
   spin?: boolean;
   'aria-label'?: string;
@@ -191,6 +192,7 @@ interface IconProps {
 const Icon: React.FC<IconProps> = ({
   name,
   className = '',
+  style,
   spin = false,
   'aria-label': ariaLabel,
 }) => {
@@ -201,6 +203,7 @@ const Icon: React.FC<IconProps> = ({
       height="1em"
       aria-hidden={ariaLabel ? undefined : true}
       aria-label={ariaLabel}
+      style={style}
       className={`inline-block shrink-0 ${spin ? 'animate-spin' : ''} ${className}`.trim()}
     />
   );
