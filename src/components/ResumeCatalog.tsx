@@ -3,6 +3,7 @@ import { usePortfolioStore } from '../store/usePortfolioStore';
 import { useContentStore } from '../store/useContentStore';
 import Icon from './Icon';
 import ProjectCover from './ProjectCover';
+import { visibleProjects } from '../utils/presentationMode';
 import type { Project, Publication, Internship, ProjectResult } from '../types';
 
 // 「作品集」目录：项目 / 论文 / 实习 / 荣誉 四个分类。
@@ -71,7 +72,14 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
   onPaperClick,
   onInternshipClick,
 }) => {
-  const { projects, publications, internships, honors } = useContentStore();
+  const {
+    projects: allProjects,
+    publications,
+    internships,
+    honors,
+  } = useContentStore();
+  // 演示模式（?mode=present）下隐藏 private 项目；缺省完整模式原样展示
+  const projects = visibleProjects(allProjects);
   const setResumeCategory = usePortfolioStore((s) => s.setResumeCategory);
 
   // 空分类不显示 Tab（论文当前恒为空，避免出现点了什么都没有的标签）
