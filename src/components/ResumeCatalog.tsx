@@ -78,7 +78,7 @@ const ResumeCatalog: React.FC<ResumeCatalogProps> = ({
     internships,
     honors,
   } = useContentStore();
-  // 演示模式（?mode=present）下隐藏 private 项目；缺省完整模式原样展示
+  // 演示模式（?mode=present）下仅保留显式 public 项目；缺省完整模式原样展示
   const projects = visibleProjects(allProjects);
   const setResumeCategory = usePortfolioStore((s) => s.setResumeCategory);
 

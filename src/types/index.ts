@@ -58,7 +58,7 @@ export interface Project {
   featured?: boolean;
   /** 真实封面图 URL；缺省时使用按 id 生成的程序化封面 */
   cover?: string;
-  /** 可见性：private 项目在主站演示模式（?mode=present）下隐藏；缺省为公开 */
+  /** 可见性：演示模式（?mode=present）下仅显示 'public' 项目；缺省（未标注）视为私密 */
   visibility?: 'public' | 'private';
 }
 

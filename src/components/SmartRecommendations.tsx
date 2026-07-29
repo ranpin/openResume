@@ -58,7 +58,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   const allProjects = useContentStore((s) => s.projects);
   const publications = useContentStore((s) => s.publications);
   const internships = useContentStore((s) => s.internships);
-  // 演示模式（?mode=present）下隐藏 private 项目，避免经推荐位泄露
+  // 演示模式（?mode=present）下仅保留显式 public 项目，避免经推荐位泄露
   const projects = useMemo(() => visibleProjects(allProjects), [allProjects]);
   const collections = useMemo(
     () =>
