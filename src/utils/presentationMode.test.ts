@@ -44,8 +44,8 @@ describe('visibleProjects', () => {
     expect(visibleProjects(all)).toEqual(all);
   });
 
-  it('演示模式下隐藏 private，保留公开与未标注项目', () => {
+  it('演示模式下仅保留显式 public 项目（未标注与 private 均隐藏）', () => {
     setQuery('?mode=present');
-    expect(visibleProjects(all).map((p) => p.id)).toEqual(['a', 'b']);
+    expect(visibleProjects(all).map((p) => p.id)).toEqual(['b']);
   });
 });
