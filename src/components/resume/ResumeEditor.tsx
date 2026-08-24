@@ -810,11 +810,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
           {/* 基本信息 */}
           <section id="sec-basics">
             <SectionHeader icon="user" title="基本信息" />
-            <p className="-mt-1 mb-3 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
+            <p className="-mt-1 mb-2 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
               <Icon name="image" />
               证件照在右侧预览头部直接点击上传 / 更换 / 移除。
             </p>
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
               <Field
                 label="姓名"
                 value={data.basics.name}
@@ -871,7 +871,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
                 onChange={(v) => update((d) => (d.basics.website = v))}
               />
             </div>
-            <div className="mt-3">
+            <div className="mt-2">
               {!data.basics.summary && (
                 <div className="flex justify-end mb-1">
                   <button
