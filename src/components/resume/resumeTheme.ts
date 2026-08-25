@@ -40,13 +40,34 @@ export const THEMES: Record<ResumeTheme, ThemeClasses> = {
     title: 'text-slate-800',
     sidebarBg: 'bg-slate-800',
   },
+  amber: {
+    ruleBorder: 'border-amber-600',
+    icon: 'text-amber-600',
+    title: 'text-amber-700',
+    sidebarBg: 'bg-amber-800',
+  },
+  cyan: {
+    ruleBorder: 'border-cyan-600',
+    icon: 'text-cyan-600',
+    title: 'text-cyan-700',
+    sidebarBg: 'bg-cyan-800',
+  },
+  fuchsia: {
+    ruleBorder: 'border-fuchsia-600',
+    icon: 'text-fuchsia-600',
+    title: 'text-fuchsia-700',
+    sidebarBg: 'bg-fuchsia-800',
+  },
 };
 
 export const THEME_OPTIONS: { id: ResumeTheme; label: string; dot: string }[] = [
-  { id: 'blue', label: '蓝', dot: 'bg-blue-600' },
-  { id: 'emerald', label: '绿', dot: 'bg-emerald-600' },
-  { id: 'violet', label: '紫', dot: 'bg-violet-600' },
   { id: 'rose', label: '玫红', dot: 'bg-rose-600' },
+  { id: 'amber', label: '琥珀', dot: 'bg-amber-600' },
+  { id: 'emerald', label: '绿', dot: 'bg-emerald-600' },
+  { id: 'cyan', label: '青', dot: 'bg-cyan-600' },
+  { id: 'blue', label: '蓝', dot: 'bg-blue-600' },
+  { id: 'violet', label: '紫', dot: 'bg-violet-600' },
+  { id: 'fuchsia', label: '品红', dot: 'bg-fuchsia-600' },
   { id: 'slate', label: '石墨', dot: 'bg-slate-700' },
 ];
 

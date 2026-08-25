@@ -40,6 +40,9 @@ const ACCENT: Record<ResumeTheme, string> = {
   violet: '7C3AED',
   rose: 'E11D48',
   slate: '334155',
+  amber: 'D97706',
+  cyan: '0891B2',
+  fuchsia: 'C026D3',
 };
 
 // 正文中文字体栈 → Word 字体（ascii/hAnsi 用西文，eastAsia 用中文）

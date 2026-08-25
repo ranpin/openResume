@@ -79,7 +79,15 @@ export interface ResumeActivity {
 
 // 模板（版式）与配色主题
 export type ResumeTemplate = 'classic' | 'sidebar' | 'compact' | 'card';
-export type ResumeTheme = 'blue' | 'emerald' | 'violet' | 'rose' | 'slate';
+export type ResumeTheme =
+  | 'blue'
+  | 'cyan'
+  | 'emerald'
+  | 'amber'
+  | 'rose'
+  | 'fuchsia'
+  | 'violet'
+  | 'slate';
 
 // 条目标题行的字段排列方式：
 // - justify：分散对齐（无分隔符），首字段贴左、时间贴右、中间字段均分间距（两端对齐）
