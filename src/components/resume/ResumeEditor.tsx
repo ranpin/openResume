@@ -76,7 +76,7 @@ const LANGUAGE_LEVELS = [
 ];
 
 /**
- * 简历编辑器：左侧分区表单，右侧实时预览。
+ * 简历编辑器：左侧实时预览，右侧分区表单。
  * 所有改动写入 useResumeStore 的本地草稿（IndexedDB，刷新不丢）。
  * 以 lazy + Suspense 加载，且只在客户端打开，SSG 预渲染不涉及。
  */
@@ -257,7 +257,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const [publishOpen, setPublishOpen] = useState(false);
   // 翻译成英文版面板（文档级全局功能，从查看器工具条移入编辑器工具栏）
   const [translateOpen, setTranslateOpen] = useState(false);
-  // 预览模式：隐藏左侧表单、预览占满（全屏预览）
+  // 预览模式：隐藏右侧表单、预览占满（全屏预览）
   const [previewMode, setPreviewMode] = useState(false);
   // 顶栏简历名内联编辑：null = 展示态，字符串 = 编辑中文本（Enter/失焦提交，Esc 取消）
   const [labelEdit, setLabelEdit] = useState<string | null>(null);
@@ -479,7 +479,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const triggerPhotoUpload = () => photoInputRef.current?.click();
 
-  // --- 预览模块点击 → 跳转左侧对应编辑分区（sec-<key>）并闪烁提示 ---
+  // --- 预览模块点击 → 跳转右侧对应编辑分区（sec-<key>）并闪烁提示 ---
   const handlePreviewSectionClick = (key: string) => {
     const el = document.getElementById(`sec-${key}`);
     if (!el) return;
@@ -797,13 +797,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         </div>
       </div>
 
-      {/* 双栏主体：表单左、预览右。md(768px) 起即左右布局——
+      {/* 双栏主体：预览左、表单右。md(768px) 起即左右布局——
           编辑器是全屏覆盖层，用户预期始终是左右双栏，
-          仅窄于 768px（手机）才退化为上下堆叠。预览模式下隐藏左侧表单、预览占满。 */}
+          仅窄于 768px（手机）才退化为上下堆叠。预览模式下隐藏右侧表单、预览占满。
+          桌面经 order 对调（预览 md:order-1 居左、表单 md:order-2 居右）；DOM 序保持表单在前，移动端仍表单在上。 */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2">
-        {/* 左：表单（预览模式下隐藏） */}
+        {/* 右：表单（预览模式下隐藏；md 起经 order 排到右侧） */}
         {!previewMode && (
-        <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 border-r">
+        <div className="overflow-y-auto bg-white p-4 sm:p-6 space-y-8 md:order-2 border-r md:border-r-0 md:border-l">
           {/* 简历诊断：完成度 + 智能检查 */}
           <DiagnosticsPanel data={data} onFix={(fix) => update(fix)} />
 
@@ -812,7 +813,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
             <SectionHeader icon="user" title="基本信息" />
             <p className="-mt-1 mb-2 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
               <Icon name="image" />
-              证件照在右侧预览头部直接点击上传 / 更换 / 移除。
+              证件照在左侧预览头部直接点击上传 / 更换 / 移除。
             </p>
             <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
               <Field
@@ -1884,11 +1885,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({
         </div>
         )}
 
-        {/* 右：实时预览（真·多页）；预览模式下占满整行。
+        {/* 左：实时预览（真·多页）；预览模式下占满整行。
             PreviewFit：可用宽度不足一页 A4 时等比缩小，避免预览被裁切/覆盖。
-            预览交互：点头部证件照上传/更换/移除；点任意模块跳转左侧对应编辑分区。 */}
+            预览交互：点头部证件照上传/更换/移除；点任意模块跳转右侧对应编辑分区。 */}
         <PreviewFit
-          className={`overflow-auto bg-gray-100 p-4 sm:p-8 ${
+          className={`overflow-auto bg-gray-100 p-4 sm:p-8 md:order-1 ${
             previewMode ? 'md:col-span-2' : ''
           }`}
         >
