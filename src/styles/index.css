@@ -11,8 +11,10 @@
       'PingFang SC',
       'Microsoft YaHei',
       sans-serif;
-    background-color: #fafaf9;
-    color: #292524;
+    /* 与 tailwind.config.js 的 warm-gray-50 / warm-gray-800 保持一致
+       （2026-10-19 配色刷新：暖米色 → 冷白 + 冷调中性灰，与主站对齐） */
+    background-color: #f8fafc;
+    color: #1e293b;
     line-height: 1.6;
   }
 
@@ -31,8 +33,8 @@
   /* typography 插件只为内置色板生成 prose-<color> 修饰类，sage 是自定义色，
      这里按插件同款写法（只覆盖链接色）手工补一个 prose-sage */
   .prose-sage {
-    --tw-prose-links: #4a614a; /* sage-600 */
-    --tw-prose-invert-links: #5f7a5f; /* sage-500 */
+    --tw-prose-links: #1a67eb; /* sage-600 */
+    --tw-prose-invert-links: #3583f6; /* sage-500 */
   }
 
   .glass-effect {
@@ -42,7 +44,7 @@
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, #5f7a5f, #7d947d);
+    background: linear-gradient(135deg, #3583f6, #5da2fb);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -73,7 +75,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(95, 122, 95, 0.1),
+      rgba(53, 131, 246, 0.1),
       transparent
     );
     transition: left 0.5s;
@@ -98,12 +100,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c7d2c7;
+  background: #bedaff;
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #a3b5a3;
+  background: #91c3ff;
 }
 
 /* 隐藏滚动条但保持滚动功能 */
@@ -204,12 +206,12 @@ section[id^='sec-'] {
 
 @keyframes sec-flash {
   0% {
-    background-color: #e3e8e3; /* sage-100 */
-    box-shadow: 0 0 0 2px #7d947d; /* sage-400 */
+    background-color: #dbeafe; /* sage-100 */
+    box-shadow: 0 0 0 2px #5da2fb; /* sage-400 */
   }
   70% {
-    background-color: rgba(227, 232, 227, 0.4);
-    box-shadow: 0 0 0 2px #a3b5a3; /* sage-300 */
+    background-color: rgba(219, 234, 254, 0.4);
+    box-shadow: 0 0 0 2px #91c3ff; /* sage-300 */
   }
   100% {
     background-color: transparent;
