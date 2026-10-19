@@ -7,7 +7,8 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
 
-Ranpin 的在线简历中心，独立部署在 **https://ranpin.github.io/openResume/**，由主站（[ranpin.github.io](https://ranpin.github.io/)）以入口卡片引用。
+Ranpin 的在线简历中心，独立部署在 [openResume](https://ranpin.github.io/openResume/)，
+由主站（[ranpin.github.io](https://ranpin.github.io/)）以入口卡片引用。
 
 一个自洽的 Vite + React + TypeScript 单页应用，包含四大功能。
 
