@@ -1,34 +1,12 @@
-import { useState, lazy, Suspense } from 'react';
 import ResumeSection from './components/ResumeSection';
 import Icon from './components/Icon';
-import { usePortfolioStore } from './store/usePortfolioStore';
-import type { Project, Publication, Internship, ContentItem } from './types';
-
-// 经历库详情弹窗仅在打开时才需要（含 Markdown + 代码高亮），按需加载
-const GlobalModals = lazy(() => import('./components/GlobalModals'));
 
 // 简历中心（独立应用）。主站以入口卡片链接到这里（ranpin.github.io/openResume/）。
 const MAIN_SITE = 'https://ranpin.github.io/';
 
 const App = () => {
-  const resumeCategory = usePortfolioStore((s) => s.resumeCategory);
   // 被主站以 iframe 内嵌时，隐藏自身页头/页脚（由主站导航提供），呈现更无缝
   const embedded = typeof window !== 'undefined' && window.self !== window.top;
-
-  // 经历库详情弹窗的选中项
-  const [selectedArticle, setSelectedArticle] = useState<Project | null>(null);
-  const [selectedPaper, setSelectedPaper] = useState<Publication | null>(null);
-  const [selectedInternship, setSelectedInternship] =
-    useState<Internship | null>(null);
-
-  const handleRecommendClick = (item: ContentItem, type: string) => {
-    const t = type.toLowerCase();
-    if (t === 'project') setSelectedArticle(item as Project);
-    else if (t === 'publication') setSelectedPaper(item as Publication);
-    else if (t === 'internship') setSelectedInternship(item as Internship);
-  };
-
-  const anyModalOpen = selectedArticle || selectedPaper || selectedInternship;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -51,12 +29,7 @@ const App = () => {
       )}
 
       <main className="container mx-auto px-4 py-8 flex-1">
-        <ResumeSection
-          resumeCategory={resumeCategory}
-          onArticleClick={(p) => setSelectedArticle(p)}
-          onPaperClick={(p) => setSelectedPaper(p)}
-          onInternshipClick={(i) => setSelectedInternship(i)}
-        />
+        <ResumeSection />
       </main>
 
       {!embedded && (
@@ -66,20 +39,6 @@ const App = () => {
             ranpin.github.io
           </a>
         </footer>
-      )}
-
-      {anyModalOpen && (
-        <Suspense fallback={null}>
-          <GlobalModals
-            selectedArticle={selectedArticle}
-            selectedPaper={selectedPaper}
-            selectedInternship={selectedInternship}
-            onCloseArticle={() => setSelectedArticle(null)}
-            onClosePaper={() => setSelectedPaper(null)}
-            onCloseInternship={() => setSelectedInternship(null)}
-            onRecommendClick={handleRecommendClick}
-          />
-        </Suspense>
       )}
     </div>
   );

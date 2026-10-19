@@ -9,8 +9,11 @@ import type { ResumeData } from '../../types/resume';
  * 读取岗位 JD + 当前简历 + 技术文档主题，浏览器直连 Anthropic 生成一份优化简历，
  * 写入当前简历的本地草稿（可再编辑/导出/重置）。
  *
+ * 2026-10-19 起由「工具栏按钮 + 弹窗」提升为与「我的简历」并列的**一级视图**，
+ * 因此这里是内联卡片而非 fixed 遮罩层；生成成功后回调 onGenerated 让上层切回简历视图。
+ *
  * 纯静态站无后端：密钥仅存本地浏览器（localStorage），不入库、不经服务器，仅站点所有者本人使用。
- * 以 lazy + Suspense 加载，只在客户端打开。
+ * 以 lazy + Suspense 加载，只在客户端渲染。
  */
 
 const KEY_STORAGE = 'ranpin-anthropic-key';
@@ -18,13 +21,14 @@ const KEY_STORAGE = 'ranpin-anthropic-key';
 interface AiGeneratePanelProps {
   resumeId: string;
   baseData: ResumeData;
-  onClose: () => void;
+  /** 生成成功后回调（上层据此切回「我的简历」视图查看结果） */
+  onGenerated?: () => void;
 }
 
 const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
   resumeId,
   baseData,
-  onClose,
+  onGenerated,
 }) => {
   const [jd, setJd] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -32,6 +36,7 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   const setDraft = useResumeStore((s) => s.setDraft);
   const setActiveId = useResumeStore((s) => s.setActiveId);
@@ -42,7 +47,7 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
       const k = localStorage.getItem(KEY_STORAGE);
       if (k) setApiKey(k);
     } catch {
-      setError(null);
+      /* localStorage 不可用时忽略，仅本次会话有效 */
     }
   }, []);
 
@@ -53,7 +58,6 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
       else localStorage.removeItem(KEY_STORAGE);
     } catch {
       /* localStorage 不可用时忽略，仅本次会话有效 */
-      setError(null);
     }
   };
 
@@ -63,6 +67,7 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
     if (!canGenerate) return;
     setLoading(true);
     setError(null);
+    setDone(false);
     try {
       const result = await generateResume({
         apiKey: apiKey.trim(),
@@ -78,7 +83,9 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
         theme: result.theme || baseData.theme,
       });
       setActiveId(resumeId);
-      onClose();
+      setDone(true);
+      // 稍作停留让用户看到成功态，再切回简历视图
+      window.setTimeout(() => onGenerated?.(), 600);
     } catch (e) {
       setError(e instanceof Error ? e.message : '生成失败，请重试');
     } finally {
@@ -87,26 +94,22 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
-        <div className="sticky top-0 bg-white border-b p-5 flex items-center justify-between">
+    <div className="flex justify-center">
+      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b bg-white p-5">
           <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
             <Icon name="sparkles" className="text-purple-500" />
             AI 生成简历
           </h2>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
-            title="关闭"
-          >
-            <Icon name="times" />
-          </button>
+          <p className="mt-1 text-sm text-gray-500">
+            结合目标岗位 JD，为「{baseData.label}」生成一份优化草稿。
+          </p>
         </div>
 
-        <div className="p-6 space-y-5">
-          <div className="flex items-start gap-3 rounded-xl bg-purple-50 border border-purple-100 p-4">
-            <Icon name="lightbulb" className="text-purple-500 mt-0.5" />
-            <p className="text-sm text-purple-900/80 leading-relaxed">
+        <div className="space-y-5 p-6">
+          <div className="flex items-start gap-3 rounded-xl border border-purple-100 bg-purple-50 p-4">
+            <Icon name="lightbulb" className="mt-0.5 text-purple-500" />
+            <p className="text-sm leading-relaxed text-purple-900/80">
               基于「
               <span className="font-medium">{baseData.label}</span>
               」和你的技术文档，结合目标 JD 生成一份优化简历，作为该简历的
@@ -117,7 +120,7 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
 
           {/* API Key（BYOK）*/}
           <div>
-            <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1.5">
+            <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700">
               <span className="flex items-center gap-1.5">
                 <Icon name="user-shield" className="text-gray-400" />
                 Anthropic API Key
@@ -136,16 +139,16 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
               onChange={(e) => saveKey(e.target.value)}
               placeholder="sk-ant-..."
               autoComplete="off"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
             />
-            <p className="mt-1 text-xs text-gray-400 leading-relaxed">
+            <p className="mt-1 text-xs leading-relaxed text-gray-400">
               密钥仅保存在你本地浏览器、直连 Anthropic，不会上传服务器或进入仓库。仅供你本人使用。
             </p>
           </div>
 
           {/* 模型 */}
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-1.5">
+            <span className="mb-1.5 block text-sm font-medium text-gray-700">
               模型
             </span>
             <select
@@ -163,39 +166,41 @@ const AiGeneratePanel: React.FC<AiGeneratePanelProps> = ({
 
           {/* JD */}
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-1.5">
+            <span className="mb-1.5 block text-sm font-medium text-gray-700">
               目标岗位描述（JD）
             </span>
             <textarea
               value={jd}
               onChange={(e) => setJd(e.target.value)}
-              rows={6}
+              rows={8}
               placeholder="粘贴岗位职责与要求…"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-y"
+              className="w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
             />
           </label>
 
           {error && (
-            <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-100 p-3 text-sm text-red-700">
+            <div className="flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">
               <Icon name="exclamation-triangle" className="mt-0.5 shrink-0" />
               <span className="break-all">{error}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3">
+          {done && (
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
+              <Icon name="check" className="shrink-0" />
+              已生成并写入草稿，正在返回「我的简历」…
+            </div>
+          )}
+
+          <div className="flex items-center justify-end">
             <button
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
-            >
-              取消
-            </button>
-            <button
+              type="button"
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${
                 canGenerate
                   ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'cursor-not-allowed bg-gray-200 text-gray-400'
               }`}
             >
               <Icon name={loading ? 'spinner' : 'sparkles'} spin={loading} />

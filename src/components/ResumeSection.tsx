@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, lazy, Suspense } from 'react';
 import Icon from './Icon';
-import ResumeCatalog from './ResumeCatalog';
 import ResumeDocument from './resume/ResumeDocument';
 import PreviewFit from './resume/PreviewFit';
 import { migrateResume, normalizeResume } from './resume/resumeIo';
@@ -9,7 +8,6 @@ import { DATA_SOURCE } from '../data/source';
 import { migrateLegacyKeys } from '../store/idb';
 import { restoreBackup } from '../store/backup';
 import { useResumeStore, DRAFTS_STORAGE_KEY } from '../store/useResumeStore';
-import type { Project, Publication, Internship } from '../types';
 import type { ResumeData } from '../types/resume';
 
 // 编辑器 / AI 面板仅在打开时才需要，按需加载（并避免进入 SSG 预渲染树）
@@ -17,43 +15,28 @@ const ResumeEditor = lazy(() => import('./resume/ResumeEditor'));
 const AiGeneratePanel = lazy(() => import('./resume/AiGeneratePanel'));
 const AiImportPanel = lazy(() => import('./resume/AiImportPanel'));
 
-interface ResumeSectionProps {
-  resumeCategory: string;
-  onArticleClick: (article: Project) => void;
-  onPaperClick: (paper: Publication) => void;
-  onInternshipClick: (internship: Internship) => void;
-}
-
-type View = 'resume' | 'catalog';
+// 顶级视图：「我的简历」与「AI 生成」并列（2026-10-19 起 AI 生成从工具栏弹窗
+// 提升为一级标签页；原「作品集」目录已整体移除）。
+type View = 'resume' | 'ai';
 
 const ToolbarButton: React.FC<{
   icon: string;
   label: string;
   onClick: () => void;
-  primary?: boolean;
-}> = ({ icon, label, onClick, primary }) => (
+}> = ({ icon, label, onClick }) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-      primary
-        ? 'bg-sage-600 text-white hover:bg-sage-700 shadow-sm'
-        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-    }`}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
   >
     <Icon name={icon} />
     {label}
   </button>
 );
 
-const ResumeSection: React.FC<ResumeSectionProps> = ({
-  resumeCategory,
-  onArticleClick,
-  onPaperClick,
-  onInternshipClick,
-}) => {
+const ResumeSection: React.FC = () => {
   const [view, setView] = useState<View>('resume');
   const [editing, setEditing] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [backupToast, setBackupToast] = useState<string | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +48,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
   const setActiveId = useResumeStore((s) => s.setActiveId);
   const setHydrated = useResumeStore((s) => s.setHydrated);
 
-  // 远程内容（数据仓库）：简历列表与经历库
+  // 远程内容（数据仓库）：简历列表
   const resumes = useContentStore((s) => s.resumes);
   const contentStatus = useContentStore((s) => s.status);
   const contentError = useContentStore((s) => s.error);
@@ -137,18 +120,20 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
 
   return (
     <div>
-      {/* 顶部：一级切换（我的简历 / 作品集）与创建级入口（AI 生成 / 导入简历）同行 */}
+      {/* 顶部：一级切换（我的简历 / AI 生成）与创建级入口（导入简历 / 导入备份）同行 */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-xl bg-gray-100 p-1">
           {(
             [
               { key: 'resume', label: '我的简历', icon: 'file-alt' },
-              { key: 'catalog', label: '作品集', icon: 'folder-open' },
+              { key: 'ai', label: 'AI 生成', icon: 'sparkles' },
             ] as const
           ).map((t) => (
             <button
               key={t.key}
+              type="button"
               onClick={() => setView(t.key)}
+              aria-current={view === t.key ? 'page' : undefined}
               className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${
                 view === t.key
                   ? 'bg-white text-sage-700 shadow-sm'
@@ -161,12 +146,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <ToolbarButton
-            icon="sparkles"
-            label="AI 生成"
-            primary
-            onClick={() => setAiOpen(true)}
-          />
           <ToolbarButton
             icon="file-import"
             label="导入简历"
@@ -201,6 +180,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
           <p className="mb-1 text-gray-600">简历数据加载失败</p>
           <p className="mb-4 text-sm text-gray-400">{contentError}</p>
           <button
+            type="button"
             onClick={() => loadContent()}
             className="inline-flex items-center gap-2 rounded-lg bg-sage-600 px-4 py-2 text-sm font-medium text-white hover:bg-sage-700"
           >
@@ -208,13 +188,25 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             重试
           </button>
         </div>
-      ) : view === 'catalog' ? (
-        <ResumeCatalog
-          resumeCategory={resumeCategory}
-          onArticleClick={onArticleClick}
-          onPaperClick={onPaperClick}
-          onInternshipClick={onInternshipClick}
-        />
+      ) : view === 'ai' ? (
+        // AI 生成：一级视图，针对当前选中的简历生成优化草稿
+        current && selectedId ? (
+          <Suspense fallback={null}>
+            <AiGeneratePanel
+              resumeId={selectedId}
+              baseData={current}
+              onGenerated={() => setView('resume')}
+            />
+          </Suspense>
+        ) : (
+          <div className="text-center py-16 text-gray-500">
+            <Icon name="sparkles" className="text-4xl mb-4 text-purple-400" />
+            <p>
+              还没有可作为基础的简历。先用右上角「导入简历」创建一份，再用 AI
+              生成针对目标岗位的优化版本。
+            </p>
+          </div>
+        )
       ) : allResumes.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <Icon name="file-alt" className="text-4xl mb-4" />
@@ -240,6 +232,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
               return (
                 <button
                   key={r.id}
+                  type="button"
                   onClick={() => {
                     setActiveId(r.id);
                     setEditing(true);
@@ -297,17 +290,6 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({
             resumeId={selectedId}
             published={published ?? current}
             onClose={() => setEditing(false)}
-          />
-        </Suspense>
-      )}
-
-      {/* AI 生成入口 */}
-      {aiOpen && current && selectedId && (
-        <Suspense fallback={null}>
-          <AiGeneratePanel
-            resumeId={selectedId}
-            baseData={current}
-            onClose={() => setAiOpen(false)}
           />
         </Suspense>
       )}

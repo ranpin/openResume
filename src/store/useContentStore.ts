@@ -6,9 +6,11 @@ import {
 } from '../data/content';
 import { idbGet, idbSet } from './idb';
 
-// 远程内容（简历 + 经历库）的加载态与数据，供 ResumeSection / ResumeCatalog /
-// SmartRecommendations 读取。成功拉取后缓存进 IndexedDB，网络失败时回退缓存
-// （fromCache=true，UI 提示离线数据）。纯本地模式下 load() 立即 ready、内容恒空。
+// 远程内容（简历）的加载态与数据，供 ResumeSection 读取。成功拉取后缓存进
+// IndexedDB，网络失败时回退缓存（fromCache=true，UI 提示离线数据）。
+// 纯本地模式下 load() 立即 ready、内容恒空。
+// 2026-10-19：「作品集」目录移除后不再加载经历库（projects/publications/
+// internships/honors），ContentBundle 只剩 resumes。
 
 const CACHE_KEY = 'content-cache';
 

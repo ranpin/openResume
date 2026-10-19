@@ -1,35 +1,27 @@
 // 内容加载器 —— 数据源为独立数据仓库（见 source.ts），运行时拉取：
-//   index.json（清单）→ 并行拉取各 YAML → 解析。
+//   index.json（清单）→ 并行拉取各简历 YAML → 解析。
 // 单文件失败只跳过该文件（清单过期等）；清单本身失败则抛错，
 // 由上层 useContentStore 回退 IndexedDB 离线缓存。
+//
+// 2026-10-19：「作品集」目录已整体移除，本站只消费简历数据。
+// 数据仓库 index.json 里的 projects / internships / honors 清单条目不再读取
+// （数据本身留在数据仓库，不影响其它消费方）。
 import { load as parseYaml } from 'js-yaml';
 import { DATA_BASE_URL } from './source';
-import type { Project, Publication, Internship, Honor } from '../types';
 import type { ResumeData } from '../types/resume';
 import { migrateResume } from '../components/resume/resumeIo';
 
 export interface ContentBundle {
   resumes: ResumeData[];
-  projects: Project[];
-  publications: Publication[];
-  internships: Internship[];
-  honors: Honor[];
 }
 
 export const EMPTY_CONTENT: ContentBundle = {
   resumes: [],
-  projects: [],
-  publications: [],
-  internships: [],
-  honors: [],
 };
 
-// 数据仓库根部的 index.json：各集合的 YAML 相对路径清单
+// 数据仓库根部的 index.json：简历 YAML 的相对路径清单
 interface ContentIndex {
   resumes?: string[];
-  projects?: string[];
-  internships?: string[];
-  honors?: string[];
 }
 
 // 文件名（去扩展名），用作稳定唯一 id
@@ -76,18 +68,9 @@ export const loadContent = async (): Promise<ContentBundle> => {
   const index: ContentIndex = JSON.parse(
     await fetchText(`${DATA_BASE_URL}/index.json`),
   );
-  const [resumes, projects, internships, honorsFiles] = await Promise.all([
-    loadMany<ResumeData>(index.resumes ?? []),
-    loadMany<Project>(index.projects ?? []),
-    loadMany<Internship>(index.internships ?? []),
-    loadMany<Honor[]>(index.honors ?? []),
-  ]);
+  const resumes = await loadMany<ResumeData>(index.resumes ?? []);
   return {
     // 载入时经 migrateResume 迁移旧格式字段（如 skills 分组数组 → 富文本）
     resumes: resumes.map(([id, v]) => migrateResume({ ...v, id })),
-    projects: projects.map(([id, v]) => ({ ...v, id })),
-    publications: [] as Publication[],
-    internships: internships.map(([id, v]) => ({ ...v, id })),
-    honors: (honorsFiles[0]?.[1] ?? []).map((h, i) => ({ ...h, id: i + 1 })),
   };
 };
