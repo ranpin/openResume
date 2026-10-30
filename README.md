@@ -1,5 +1,7 @@
 # openResume · 简历中心
 
+> 🎬 **在线 Demo**：<https://ranpin.github.io/openResume/>
+
 [![Live](https://img.shields.io/badge/Live-ranpin.github.io%2FopenResume-4a614a?logo=githubpages&logoColor=white)](https://ranpin.github.io/openResume/)
 [![Deploy](https://github.com/ranpin/openResume/actions/workflows/deploy.yml/badge.svg)](https://github.com/ranpin/openResume/actions/workflows/deploy.yml)
 [![CI](https://github.com/ranpin/openResume/actions/workflows/ci.yml/badge.svg)](https://github.com/ranpin/openResume/actions/workflows/ci.yml)
@@ -12,7 +14,7 @@ Ranpin 的在线简历中心，独立部署在 [openResume](https://ranpin.githu
 
 一个自洽的 Vite + React + TypeScript 单页应用，包含四大功能。
 
-## 功能
+## 核心功能
 
 ### 在线简历编辑器
 
@@ -75,3 +77,7 @@ npm run lint && npm run typecheck && npx vitest run
 推送到 `main` → `.github/workflows/deploy.yml` 构建并发布到 GitHub Pages 项目页 `/openResume/`。`vite.config.ts` 的 `base: '/openResume/'` 是项目页必需。
 
 > 密钥（AI / GitHub Token）只保存在使用者本地浏览器，不入库、不经服务器，仅站点所有者本人使用。
+
+## 许可与致谢
+
+MIT——见 [`LICENSE`](LICENSE)。
